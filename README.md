@@ -1,2 +1,2 @@
 # WalkSafeApp
-Diploma Project
+Diploma Project using React Native
