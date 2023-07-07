@@ -1,5 +1,5 @@
 import React, {Component, useEffect, useState} from 'react';
-import {StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Button, FlatList, Animated, Modal, PermissionsAndroid, ScrollView} from 'react-native';
+import {StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Modal, PermissionsAndroid, ScrollView, BackHandler, Alert} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack'
@@ -9,6 +9,8 @@ import { AutoGrowTextInput } from 'react-native-auto-grow-textinput';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
+import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+
 
 const App = () => {
 
@@ -17,6 +19,7 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator headerMode='screen'>
+        <Stack.Screen name='SplashScreen' component={SplashScreenPage} options={{headerShown: false}}/>
         <Stack.Screen name='Start' component={StartPage} options={{headerShown: false}}/>
         <Stack.Screen name='Login' component={LoginPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
         <Stack.Screen name='Signup' component={SignupPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
@@ -24,6 +27,7 @@ const App = () => {
         <Stack.Screen name='Report' component={ReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
         <Stack.Screen name='SubmitReport' component={SubmitReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
         <Stack.Screen name='Profile' component={ProfilePage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='RecentReports' component={RecentReportsPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
       </Stack.Navigator>
     </NavigationContainer>
   )
@@ -42,6 +46,27 @@ const Logo = () => {
     </View>
   );
 };
+
+
+const SplashScreenPage = ({navigation}) => {
+  setTimeout(() => {
+    navigation.replace('Start'); 
+  }, 1000);
+  return (
+      <View style={[styles.container, {backgroundColor:'#9975AE'}]}>
+        <View style={{width:170,height:110, alignSelf:'center', top:'40%'}}>
+          <Image
+            source={require("./icons/steps.png")}
+            resizeMode="contain"
+            style={[styles.image, {width:70, height:70}]}
+          ></Image>
+          <Text style={[styles.walk, {fontSize:28, left:10}]}>Walk</Text>
+          <Text style={[styles.safe, {fontSize:35, left:65}]}>Safe</Text>
+        </View>
+      </View>
+  );
+};
+
 
 const StartPage = ({navigation}) => {
   return (
@@ -168,7 +193,7 @@ const HomePage = ({navigation}) => {
           </TouchableOpacity>
         </View>
         <View style={{top:340 , alignSelf: 'center'}}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('RecentReports')}>
             <Text style={styles.signup}>Πρόσφατα περιστατικά</Text>
           </TouchableOpacity>
         </View>
@@ -244,8 +269,9 @@ const ReportPage = ({navigation}) => {
   //////////////////////
   
   const [mapVisible, setMapVisible] = useState(false);
-  const [focusLatitude, setFocusLatitude] = useState(38.250700);
-  const [focusLongitude, setFocusLongitude] = useState(21.744681);
+  const [focusLatitude, setFocusLatitude] = useState(38.125664);
+  const [focusLongitude, setFocusLongitude] = useState(23.148006);
+  const [latDelta, setLatDelta] = useState(7);
   const [renderMarker, setRenderMarker] = useState(false);
   const [MarkerCoords, setMarkerCoords] = useState({"latitude":0, "longitude": 0});
   const [showAddress, setShowAddress] = useState(false)
@@ -277,11 +303,13 @@ const ReportPage = ({navigation}) => {
   }
 
   const [addressMarked, setAddressMarked] = useState('') 
+  const [renderMarkerbySearch, setRenderMarkerbySearch] = useState(false);
+
 
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
-        <KeyboardAwareScrollView contentContainerStyle={{paddingBottom:200}} enableOnAndroid extraScrollHeight={100} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView contentContainerStyle={{paddingBottom:200}} enableOnAndroid extraScrollHeight={100} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled'>
           <View style={styles.headersTitle}>
             <Text style={{fontFamily: 'serif',fontSize: 22}}>Αναφορά περιστατικού</Text>
           </View>
@@ -344,13 +372,13 @@ const ReportPage = ({navigation}) => {
                   <MapView style={{width:350, height:600}}
                     provider={MapView.PROVIDER_GOOGLE}
                     ref={(ref) => (this.mapRef = ref)}
-                    minZoomLevel={8}
+                    minZoomLevel={5}
                     rotateEnabled={true}
                     region={{
                       latitude: focusLatitude,
                       longitude: focusLongitude,
-                      latitudeDelta: 0.0922,
-                      longitudeDelta: 0.0421,
+                      latitudeDelta: latDelta,
+                      longitudeDelta: 0,
                     }} 
                     
                     onPress={ (event) => {/*console.log(event.nativeEvent.coordinate);*/ setRenderMarker(true); setMarkerCoords(event.nativeEvent.coordinate); 
@@ -366,6 +394,7 @@ const ReportPage = ({navigation}) => {
                     // showsMyLocationButton={true}
                   >
                     {renderMarker && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                    {renderMarkerbySearch && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
                   </MapView>
                 </View>
 
@@ -376,7 +405,7 @@ const ReportPage = ({navigation}) => {
                 </View>
 
                 <View style={{alignSelf: 'flex-end', position:'absolute', top:40, right:10, backgroundColor:'white', width:30, height:30, justifyContent:'center', borderRadius:5}}>
-                  <TouchableOpacity onPress={() => getLocation()}>
+                  <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}>
                     <Image
                       source={require("./icons/current-location-icon.jpg")}
                       resizeMode="contain"
@@ -384,10 +413,34 @@ const ReportPage = ({navigation}) => {
                     ></Image>
                   </TouchableOpacity>
                 </View>
+
+                <View style={{position:'absolute', width:280, height:170, top: 10, left:10}}>
+                  <GooglePlacesAutocomplete
+                    placeholder="Αναζήτηση"
+                    query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                    GooglePlacesDetailsQuery={{
+                      fields: 'geometry',
+                    }}
+                    // ref={ref => {
+                    //   ref?.setAddressText('123 myDefault Street, mycity')
+                    // }}
+                    fetchDetails={true}
+                    onPress={(data, details = null) => {setRenderMarkerbySearch(true); 
+                                                        setMarkerCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                        setFocusLatitude(details.geometry.location.lat); 
+                                                        setFocusLongitude(details.geometry.location.lng); 
+                                                        setLatDelta(0.02);
+                                                        setShowAddress(true);
+                                                        setAddressMarked(data.description);
+                                                      }}
+                    textInputProps={{placeholderTextColor:'grey'}}
+                    styles={{textInput:{color:'black'}, description:{color:'black'}}}
+                  />
+                </View>
               </View>
             </Modal>
             
-            <TouchableOpacity onPress={() => setMapVisible(true)}>
+            <TouchableOpacity onPress={() => {setMapVisible(true); getLocation(); setLatDelta(0.02)}}>
               <Image
                     source={require("./icons/map.png")}
                     resizeMode="contain"
@@ -396,7 +449,6 @@ const ReportPage = ({navigation}) => {
             </TouchableOpacity>
           </View>
 
-          
           
           <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 115}}>Περιγραφή θύτη</Text>
           <View style={{backgroundColor:'#D2C8D8', width: 340, borderRadius: 5, left: 25, top: 120}}>
@@ -538,6 +590,65 @@ const ProfilePage = ({navigation}) => {
           </TouchableOpacity>
         </View>
         
+      </View>
+    </LinearGradient>
+  );
+};
+
+
+
+const RecentReportsPage = ({navigation}) => {
+  const [value, setValue] = useState('1');
+
+  const [focusLatitude, setFocusLatitude] = useState(38.125664);
+  const [focusLongitude, setFocusLongitude] = useState(23.148006);
+  const [latDelta, setLatDelta] = useState(7);
+
+  return (
+    <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
+      <View style={styles.container}>
+        <View style={[styles.headersTitle, {width:244}]}>
+          <Text style={{fontFamily: 'serif',fontSize: 22}}>Πρόσφατα περιστατικά</Text>
+        </View>
+        <View style={{flexDirection: 'row'}}>
+          <Text style={{fontFamily: 'serif',fontSize: 18, top:50, left:20}}>Έως:</Text>
+          <View>
+            <Dropdown 
+              style={{width:170, height:30, top:47, left: 30}}
+              placeholderStyle={{fontSize:18}}
+              containerStyle={{backgroundColor:'white', borderWidth:1, borderRadius:5}}
+              iconColor='white'
+              itemTextStyle= {{color:'black', height:20, bottom:10}}
+              itemContainerStyle={{borderRadius:5, borderBottomWidth:0.2, height:40}}
+              activeColor='#DBD9D9'
+              data={[{label: '1 μήνα πριν', value:'1'}, {label: '2 εβδομάδες πριν', value:'2'}, {label: '1 εβδομάδα πριν', value:'3'}, {label: '1 ημέρα πριν', value:'4'}]}
+              maxHeight={140}
+              labelField="label"
+              valueField="value"
+              placeholder="Επιλέξτε"
+              fontFamily='serif'
+              value={value}
+              onChange={item => {
+                setValue(item.value);
+              }}
+              />
+          </View>  
+        </View>
+        <View style={{width:360, height:600, overflow:'hidden', borderRadius:10, alignSelf:'center', top:70}}>
+          <MapView style={{width:360, height:600}}
+            provider={MapView.PROVIDER_GOOGLE}
+            ref={(ref) => (this.mapRef = ref)}
+            minZoomLevel={5}
+            rotateEnabled={true}
+            region={{
+              latitude: focusLatitude,
+              longitude: focusLongitude,
+              latitudeDelta: latDelta,
+              longitudeDelta: 0,
+            }} 
+          >
+          </MapView>
+        </View>
       </View>
     </LinearGradient>
   );

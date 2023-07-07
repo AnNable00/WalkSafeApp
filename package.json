@@ -20,6 +20,7 @@
     "react-native-bootsplash": "^4.7.1",
     "react-native-element-dropdown": "^2.9.0",
     "react-native-geolocation-service": "^5.3.1",
+    "react-native-google-places-autocomplete": "^2.5.1",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-linear-gradient": "^2.6.2",
     "react-native-maps": "^1.7.1",
