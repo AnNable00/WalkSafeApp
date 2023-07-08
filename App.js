@@ -10,13 +10,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+import styles from './styles';
 
 
+//Main
 const App = () => {
 
   const Stack = createNativeStackNavigator();
 
   return (
+    //Different screens of the app
     <NavigationContainer>
       <Stack.Navigator headerMode='screen'>
         <Stack.Screen name='SplashScreen' component={SplashScreenPage} options={{headerShown: false}}/>
@@ -33,7 +36,10 @@ const App = () => {
   )
 }
 
+
+//Logo
 const Logo = () => {
+
   return (
     <View>
       <Image
@@ -48,12 +54,16 @@ const Logo = () => {
 };
 
 
+//Screen that appears when user launches the app
 const SplashScreenPage = ({navigation}) => {
+  //Disappears after a sec (1000ms) - Navigates to start page
   setTimeout(() => {
     navigation.replace('Start'); 
   }, 1000);
+
   return (
       <View style={[styles.container, {backgroundColor:'#9975AE'}]}>
+        {/* Resized Logo */}
         <View style={{width:170,height:110, alignSelf:'center', top:'40%'}}>
           <Image
             source={require("./icons/steps.png")}
@@ -68,6 +78,7 @@ const SplashScreenPage = ({navigation}) => {
 };
 
 
+//This page appears only when user hasn't signed in. After they sign-up they stay signed-in, unless they sign-out.
 const StartPage = ({navigation}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
@@ -75,6 +86,7 @@ const StartPage = ({navigation}) => {
         <Logo />
         <View style={styles.frontCircles1}></View>
         <View style={styles.frontCircles2}></View>
+        {/* Welcoming text*/}
         <View style={{alignSelf: 'center'}}>
           <Text style={styles.start_title}>Περπατήστε με ασφάλεια!</Text>
           <Text style={styles.start_text}>Ενημερωθείτε ανά πάσα στιγμή για επικίνδυνα
@@ -82,11 +94,13 @@ const StartPage = ({navigation}) => {
           </Text>
           <Text style={styles.start_text}>Σχεδιάστε και πλοηγηθείτε στην πιο ασφαλή για εσάς διαδρομή!</Text>
         </View>
+        {/* Sign-in button */}
         <View style={{top:310 , alignSelf: 'center'}}>
           <TouchableOpacity onPress={() => navigation.navigate('Login') }>
             <Text style={styles.login}>Είσοδος</Text>
           </TouchableOpacity>
         </View>
+        {/* Sign-up button */}
         <View style={{top:330 , alignSelf: 'center'}}>
           <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
             <Text style={styles.signup}>Δημιουργία Λογαριασμού</Text>
@@ -97,24 +111,29 @@ const StartPage = ({navigation}) => {
   );
 };
 
+
+//Login
 const LoginPage = ({navigation}) => {
   return(
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <View style={styles.frontCircles1}></View>
         <View style={styles.frontCircles2}></View>
-        <Text style={{fontFamily: 'serif', fontSize:23, fontWeight: 'bold', color: 'white', left: 30, top: 75}}>Είσοδος</Text>
+        <Text style={styles.loginTitle}>Είσοδος</Text>
         <View style={styles.circle}></View>
+        {/* Registered user's email address */}
         <View>
-          <Text style={{fontSize:20, color: '#5C5C5C', left: 30, top: 215}}>Email</Text>
+          <Text style={styles.emailTitle}>Email</Text>
           <TextInput style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
+        {/* Registered user's password for app login */}
         <View>
-          <Text style={{fontSize:20, color: '#5C5C5C', left: 30, top: 245}}>Password</Text>
+          <Text style={styles.passwordTitle}>Password</Text>
           <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} />
         </View>
-        <Text style={{fontSize:12, color:'black', alignSelf: 'flex-end', right:30, top: 250, opacity: 0.7}}>Forgot your password?</Text>
-        <View style={{top: 400, right: 30, alignSelf: 'flex-end'}}>
+        <Text style={styles.forgotPassword}>Forgot your password?</Text>
+        {/* Login button */}
+        <View style={styles.loginButton}>
           <TouchableOpacity onPress={() => navigation.navigate('Home') }>
             <View style={styles.rect}>
               <Text style={styles.logIn}>Είσοδος</Text>
@@ -132,27 +151,32 @@ const LoginPage = ({navigation}) => {
 };
 
 
+//Sign up
 const SignupPage = () => {
   return(
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <View style={styles.frontCircles1}></View>
         <View style={styles.frontCircles2}></View>
-        <Text style={{fontFamily: 'serif', fontSize:23, fontWeight: 'bold', color: 'white', left: 30, top: 75}}>Δημιουργία Λογαριασμού</Text>
+        <Text style={styles.signupTitle}>Δημιουργία Λογαριασμού</Text>
         <View style={styles.circle}></View>
+        {/* User sets username */}
         <View>
-          <Text style={{fontSize:20, color: '#5C5C5C', left: 30, top: 185}}>Username</Text>
+          <Text style={styles.usernameTitle}>Username</Text>
           <TextInput style={styles.username} placeholder='e.g. AnnaP.' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
+        {/* User sets email address */}
         <View>
-          <Text style={{fontSize:20, color: '#5C5C5C', left: 30, top: 215}}>Email</Text>
+          <Text style={styles.signupEmailTitle}>Email</Text>
           <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.thirdTextInput.focus(); }}/>
         </View>
+        {/* User sets password */}
         <View>
-          <Text style={{fontSize:20, color: '#5C5C5C', left: 30, top: 245}}>Password</Text>
+          <Text style={styles.signupPasswordTitle}>Password</Text>
           <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} />
         </View>
-        <View style={{top: 330, right: 30, alignSelf: 'flex-end'}}>
+        {/* Create account button */}
+        <View style={styles.createAccountButton}>
           <TouchableOpacity>
             <View style={styles.rect2}>
               <Text style={styles.create}>Δημιουργία</Text>
@@ -170,12 +194,13 @@ const SignupPage = () => {
 };
 
 
-
+//First page that appears when user is already signed-in
 const HomePage = ({navigation}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <Logo />
+        {/* Profile button */}
         <View style={{top: 25, right: 25}}>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <Image 
@@ -187,14 +212,16 @@ const HomePage = ({navigation}) => {
         </View>
         <View style={styles.frontCircles1}></View>
         <View style={styles.frontCircles2}></View>
+        {/* Report an incident button */}
         <View style={{top:310 , alignSelf: 'center'}}>
           <TouchableOpacity onPress={() => navigation.navigate('Report')}>
-            <Text style={styles.login}>Αναφορά περιστατικού</Text>
+            <Text style={styles.reportIncidentButton}>Αναφορά περιστατικού</Text>
           </TouchableOpacity>
         </View>
+        {/* Show recent incidents/reports button */}
         <View style={{top:340 , alignSelf: 'center'}}>
           <TouchableOpacity onPress={() => navigation.navigate('RecentReports')}>
-            <Text style={styles.signup}>Πρόσφατα περιστατικά</Text>
+            <Text style={styles.recentReportsButton}>Πρόσφατα περιστατικά</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -205,16 +232,17 @@ const HomePage = ({navigation}) => {
 };
 
 
+//Function called when user opens map and requests current location - Checks if permissions are granted to access user's location
 const requestLocationPermission = async () => {
   try {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
     );
     if (granted === 'granted') {
-      console.log('Granted permission');
+      // console.log('Granted permission');
       return true;
     } else {
-      console.log('Permission denied');
+      // console.log('Permission denied');
       return false;
     }
   } catch (err) {
@@ -223,16 +251,18 @@ const requestLocationPermission = async () => {
 };
 
 
+//User reports an incident by filling in a form
 const ReportPage = ({navigation}) => {
   const [value, setValue] = useState(null);
 
-  //DateTimePicker
+  //DateTimePicker - User sets date & time of incident
   const [date, setDate] = useState(new Date());
   const [mode, setMode] = useState('date');
   const [show, setShow] = useState(false);
   const [time, setTime] = useState(new Date());
   const [showDateTime, setShowDateTime] = useState(false)
 
+  //Function called when user selects date & time in the popup calendar
   const onChange = (event, selectedValue) => {
     setShow(Platform.OS === 'ios');
     if (mode == 'date') {
@@ -257,7 +287,7 @@ const ReportPage = ({navigation}) => {
   const showDatepicker = () => {
     showMode('date');
   };
-
+  //Customized format of date & time selected by user
   const formatDate = (date, time) => {
     let hour = time.getHours();
     let minute = time.getMinutes();
@@ -268,33 +298,32 @@ const ReportPage = ({navigation}) => {
   };
   //////////////////////
   
+
+  //Map configurations - User selects on map where the incident took place
   const [mapVisible, setMapVisible] = useState(false);
+  //intial latitude-longitude where map is focused
   const [focusLatitude, setFocusLatitude] = useState(38.125664);
   const [focusLongitude, setFocusLongitude] = useState(23.148006);
+  //map zoom level 
   const [latDelta, setLatDelta] = useState(7);
   const [renderMarker, setRenderMarker] = useState(false);
   const [MarkerCoords, setMarkerCoords] = useState({"latitude":0, "longitude": 0});
   const [showAddress, setShowAddress] = useState(false)
 
-  //Use Current Location
-  const [location, setLocation] = useState(false);
-  // function to check permissions and get Location
+  //User's Location
+  //Function to check permissions and get user's current location
   const getLocation = () => {
     const result = requestLocationPermission();
     result.then(res => {
       if (res) {
         Geolocation.getCurrentPosition(
           position => {
-            // console.log('Latitude:' +position.coords.latitude);
+            //Focus map on user's location
             setFocusLatitude(position.coords.latitude)
-            // console.log('Longitude:' +position.coords.longitude);
             setFocusLongitude(position.coords.longitude)
-            setLocation(position);
           },
           error => {
-            // See error code charts below.
             console.log(error.code, error.message);
-            setLocation(false);
           },
           {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
         );
@@ -302,6 +331,7 @@ const ReportPage = ({navigation}) => {
     });
   }
 
+  //
   const [addressMarked, setAddressMarked] = useState('') 
   const [renderMarkerbySearch, setRenderMarkerbySearch] = useState(false);
 
@@ -309,12 +339,14 @@ const ReportPage = ({navigation}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
+        {/* Scrollview of screen is visible only when the input fields expand enough to not fit in the screen (when user writes more lines of text than the height of the text box) */}
         <KeyboardAwareScrollView contentContainerStyle={{paddingBottom:200}} enableOnAndroid extraScrollHeight={100} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled'>
           <View style={styles.headersTitle}>
-            <Text style={{fontFamily: 'serif',fontSize: 22}}>Αναφορά περιστατικού</Text>
+            <Text style={styles.reportIncidentHeader}>Αναφορά περιστατικού</Text>
           </View>
-          <Text style={{top: 40, left: 25, fontFamily: 'serif'}}>Συμπληρώστε τα παρακάτω πεδία:</Text>
-          <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 55}}>Είδος περιστατικού</Text>
+          <Text style={styles.fillInFields}>Συμπληρώστε τα παρακάτω πεδία:</Text>
+          {/* User selects type of incident from a dropdown list */}
+          <Text style={styles.incidentType}>Είδος περιστατικού</Text>
           <View>
             <Dropdown 
               style={styles.dropdown}
@@ -337,10 +369,14 @@ const ReportPage = ({navigation}) => {
               />
           </View>
 
-          <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 75}}>Ημερομηνία & Ώρα</Text>
-          <View style={{backgroundColor:'#D2C8D8', width: 340, height: 40, borderRadius: 5, left: 25, top: 80, flexDirection:'row'}}>
-            {!showDateTime && (<Text style={[styles.placeholderStyle, {fontFamily:'serif', top:8, width:340}]}>Ορίστε πότε συνέβη</Text>)}
-            {showDateTime && (<Text style={[styles.placeholderStyle, {fontFamily:'serif', top:8, width:340, color:'#3E3D3D'}]}>{formatDate(date,time)}</Text>)}
+          {/* User selects date & time of incident from a popup calendar */}
+          <Text style={styles.dateTimeTitle}>Ημερομηνία & Ώρα</Text>
+          <View style={styles.dateTimeField}>
+            {/* Show placeholder when date & time not selected by user yet */}
+            {!showDateTime && (<Text style={styles.fieldPlaceholder}>Ορίστε πότε συνέβη</Text>)}
+            {/* Show formatted date & time that user selected */}
+            {showDateTime && (<Text style={[styles.fieldPlaceholder, {color:'#3E3D3D'}]}>{formatDate(date,time)}</Text>)}
+            {/* Show-calendar button */}
             <TouchableOpacity onPress={showDatepicker}>
               <Image
                     source={require("./icons/date.jpg")}
@@ -348,10 +384,11 @@ const ReportPage = ({navigation}) => {
                     style={styles.icon}
               ></Image>
             </TouchableOpacity>
+            {/* Show popup calendar */}
             {show && (
                 <DateTimePicker
                   testID="dateTimePicker"
-                  timeZoneOffsetInMinutes={+3*60}
+                  timeZoneOffsetInMinutes={+3*60} //utc+3
                   value={date}
                   mode={mode}
                   is24Hour={true}
@@ -361,19 +398,25 @@ const ReportPage = ({navigation}) => {
             )}
           </View>
 
-          <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 95}}>Τοποθεσία περιστατικού</Text>
-          <View style={{backgroundColor:'#D2C8D8', width: 340, height: 40, borderRadius: 5, left: 25, top: 100, flexDirection:'row'}}>
-            {!showAddress && (<Text style={[styles.placeholderStyle, {fontFamily:'serif', top:8, width:340}]}>Επιλέξτε στον χάρτη πού συνέβη</Text>)}
-            {showAddress && (<ScrollView style={{height:32, top:5}}><Text style={[styles.placeholderStyle, {fontFamily:'serif', width:290, color:'#3E3D3D'}]}>{addressMarked}</Text></ScrollView>)}
+          {/* User selects on map where incident took place */}
+          <Text style={styles.incidentLocationTitle}>Τοποθεσία περιστατικού</Text>
+          <View style={styles.incidentLocationField}>
+            {/* Show placeholder when incident location not selected by user yet */}
+            {!showAddress && (<Text style={styles.fieldPlaceholder}>Επιλέξτε στον χάρτη πού συνέβη</Text>)}
+            {/* Show the address that user marked on map */}
+            {showAddress && (<ScrollView style={{height:32, top:5}}><Text style={styles.selectedAddress}>{addressMarked}</Text></ScrollView>)}
+            {/* popup map window */}
             <Modal  animationType="fade" transparent={true} visible={mapVisible}>
-              <View style={{width:'100%', height:'100%', backgroundColor:'grey', opacity:0.5}}></View>
-              <View style={{width: 350, height:600, backgroundColor:'white', alignSelf:'center', top: 95, borderRadius:10, position:'absolute'}}>
-                <View style={{width:350, height:600, overflow:'hidden', borderRadius:10}}>
+              <View style={styles.blurBackground}></View>
+              <View style={styles.mapModal}>
+                <View style={styles.mapWindow}>
+                  {/* map configurations */}
                   <MapView style={{width:350, height:600}}
                     provider={MapView.PROVIDER_GOOGLE}
                     ref={(ref) => (this.mapRef = ref)}
                     minZoomLevel={5}
                     rotateEnabled={true}
+                    //region where map is centered
                     region={{
                       latitude: focusLatitude,
                       longitude: focusLongitude,
@@ -381,7 +424,9 @@ const ReportPage = ({navigation}) => {
                       longitudeDelta: 0,
                     }} 
                     
-                    onPress={ (event) => {/*console.log(event.nativeEvent.coordinate);*/ setRenderMarker(true); setMarkerCoords(event.nativeEvent.coordinate); 
+                    //when user presses somewhere on map, a red marker appears and the coords of that spot are converted into an address
+                    //which is shown in the respective text field of the form
+                    onPress={ (event) => {setRenderMarker(true); setMarkerCoords(event.nativeEvent.coordinate); 
                                           {mapRef.addressForCoordinate(event.nativeEvent.coordinate).then((address) => {
                                             setAddressMarked(address.thoroughfare + ' ' + address.name + ', ' + address.locality);
                                             // console.log(addressMarked); 
@@ -391,21 +436,26 @@ const ReportPage = ({navigation}) => {
                                             setShowAddress(true)
                     } }
                     showsUserLocation={true}
-                    // showsMyLocationButton={true}
+                    showsMyLocationButton={false}
                   >
+                    {/* render a marker where user pressed on map */}
                     {renderMarker && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                    {/* render a marker for the selected-by-user search result */}
                     {renderMarkerbySearch && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
                   </MapView>
                 </View>
 
-                <View style={{alignSelf:'flex-end', position:'absolute', backgroundColor:'white', width:50, borderTopRightRadius:10, borderBottomLeftRadius:10}}>
+                {/* close map button */}
+                <View style={styles.closeMapButton}>
                   <TouchableOpacity onPress={() => setMapVisible(!mapVisible)}>
-                    <Text style={{color:'grey',fontSize:16, alignSelf:'center'}}>Close</Text>
+                    <Text style={styles.closeMapButtonText}>Close</Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={{alignSelf: 'flex-end', position:'absolute', top:40, right:10, backgroundColor:'white', width:30, height:30, justifyContent:'center', borderRadius:5}}>
-                  <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}>
+                {/* find user's current location button */}
+                <View style={styles.currentLocationButton}>
+                  {/* LatDelta is set to 0.02 for applying more zoom on user's location */}
+                  <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}> 
                     <Image
                       source={require("./icons/current-location-icon.jpg")}
                       resizeMode="contain"
@@ -414,7 +464,8 @@ const ReportPage = ({navigation}) => {
                   </TouchableOpacity>
                 </View>
 
-                <View style={{position:'absolute', width:280, height:170, top: 10, left:10}}>
+                {/* Places search bar configuration */}
+                <View style={styles.mapSearchBar}>
                   <GooglePlacesAutocomplete
                     placeholder="Αναζήτηση"
                     query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
@@ -425,6 +476,10 @@ const ReportPage = ({navigation}) => {
                     //   ref?.setAddressText('123 myDefault Street, mycity')
                     // }}
                     fetchDetails={true}
+
+                    //when user searches for a place via the map's search bar, a list of results appears
+                    //by selecting a result, a red marker appears, map focuses on that and the address 
+                    //is also shown in the respective text field of the form 
                     onPress={(data, details = null) => {setRenderMarkerbySearch(true); 
                                                         setMarkerCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
                                                         setFocusLatitude(details.geometry.location.lat); 
@@ -440,6 +495,8 @@ const ReportPage = ({navigation}) => {
               </View>
             </Modal>
             
+            {/* Open map button */}
+            {/* When map opens , user is asked to grant permission for access to their location */}
             <TouchableOpacity onPress={() => {setMapVisible(true); getLocation(); setLatDelta(0.02)}}>
               <Image
                     source={require("./icons/map.png")}
@@ -449,20 +506,22 @@ const ReportPage = ({navigation}) => {
             </TouchableOpacity>
           </View>
 
-          
-          <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 115}}>Περιγραφή θύτη</Text>
-          <View style={{backgroundColor:'#D2C8D8', width: 340, borderRadius: 5, left: 25, top: 120}}>
+          {/* User's description of the perpetrator */}
+          <Text style={styles.descriptionTitle}>Περιγραφή θύτη</Text>
+          <View style={styles.descriptionField}>
             <TextInput multiline={true} numberOfLines={3} blurOnSubmit={true} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε μία σύντομη περιγραφή του θύτη' placeholderTextColor={'#878787'}></TextInput>
           </View>
-          <Text style={{fontFamily: 'serif', fontSize: 18, left: 25, top: 135}}>Λεπτομέρειες & Σχόλια (προαιρετικά)</Text>
-          <View style={{backgroundColor:'#D2C8D8', width: 340, borderRadius: 5, left: 25, top: 140}}>
+          {/* User's further details & comments about the incident */}
+          <Text style={styles.detailsTitle}>Λεπτομέρειες & Σχόλια (προαιρετικά)</Text>
+          <View style={styles.detailsField}>
             <TextInput multiline={true} numberOfLines={4} blurOnSubmit={true} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε επιπλέον λεπτομέρειες σχετικά με το περιστατικό' placeholderTextColor={'#878787'} ></TextInput>
           </View>
         
-          <View style={{top: 180, right: 30, alignSelf: 'flex-end'}}>
+          {/* Proceed submit button */}
+          <View style={styles.proceedSubmitButton}>
             <TouchableOpacity onPress={() => navigation.navigate('SubmitReport')}>
               <View style={[styles.rect, {width: 150}]}>
-                <Text style={styles.logIn}>Συνέχεια</Text>
+                <Text style={styles.proceedSubmitButtonText}>Συνέχεια</Text>
                 <Image
                   source={require("./icons/arrow.png")}
                   resizeMode="contain"
@@ -479,23 +538,22 @@ const ReportPage = ({navigation}) => {
 };
 
 
-
-
+//User confirms the report submission 
 const SubmitReportPage = ({navigation}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <View style={styles.headersTitle}>
-          <Text style={{fontFamily: 'serif',fontSize: 22}}>Αναφορά περιστατικού</Text>
+          <Text style={styles.reportIncidentHeader}>Αναφορά περιστατικού</Text>
         </View>
-        <Text style={{top: 60, left: 25, fontFamily: 'serif', fontSize: 18}}>(Συνέχεια)</Text>
+        <Text style={styles.continueText}>(Συνέχεια)</Text>
         <View style={styles.circle}></View>
-        <Text style={{fontFamily: 'serif', fontSize: 20, top: 200, width:300, alignSelf:'center', color:'#5C5C5C', fontWeight:'bold'}}>Πατήστε υποβολή για να δημοσιεύσετε το περιστατικό στην εφαρμογή.</Text>
-        <Text style={{fontFamily: 'serif', fontSize: 16, top: 230, width:300, alignSelf:'center', color:'#5C5C5C'}}>Μετά την δημοσίευση, το περιστατικό θα εμφανίζεται στο χάρτη με τα πρόσφατα περιστατικά.</Text>
-        <View style={{top: 350, alignSelf:'center'}}>
+        <Text style={styles.infoText1}>Πατήστε υποβολή για να δημοσιεύσετε το περιστατικό στην εφαρμογή.</Text>
+        <Text style={styles.infoText2}>Μετά την δημοσίευση, το περιστατικό θα εμφανίζεται στο χάρτη με τα πρόσφατα περιστατικά.</Text>
+        <View style={styles.submitButton}>
           <TouchableOpacity>
               <View style={[styles.rect]}>
-                <Text style={[styles.login, {width:140, fontWeight:'bold'}]}>Υποβολή</Text>
+                <Text style={styles.submitButtonText}>Υποβολή</Text>
               </View>
           </TouchableOpacity>   
         </View>
@@ -505,74 +563,80 @@ const SubmitReportPage = ({navigation}) => {
 };
 
 
-
+//Profile
 const ProfilePage = ({navigation}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <View style={[styles.headersTitle, {width:80}]}>
-          <Text style={{fontFamily: 'serif',fontSize: 22}}>Προφίλ</Text>
+          <Text style={styles.profileHeader}>Προφίλ</Text>
         </View>
-        <View style={[styles.circle, {backgroundColor: "black", top:100}]}></View>
+        <View style={styles.backCircle}></View>
         <Text style={styles.user}>Χρήστης</Text>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '100%', top:135, opacity:0.5}}></View>
+        <View style={styles.underLine1}></View>
 
+        {/* modify username */}
         <Text style={styles.userName}>Username</Text>
-        <View style={{flexDirection: 'row', top: 155, height:25}}>
-          <Text style={[styles.userName, {color:'white', top:0, width:360}]}>AnnaP.</Text>
+        <View style={styles.userNameField}>
+          <Text style={styles.fieldText}>AnnaP.</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
                 resizeMode="contain"
-                style={{alignSelf: 'flex-end', width: 30, height: 30, position:'absolute', opacity: 0.6, bottom:0}}
+                style={styles.modIcon}
               ></Image>
           </TouchableOpacity>
         </View>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '85%', top:155, opacity:0.5, alignSelf:'center'}}></View>
+        <View style={styles.underLine2}></View>
 
-        <Text style={[styles.userName, {top:170}]}>Email</Text>
-        <View style={{flexDirection: 'row', top: 175, height:25}}>
-        <Text style={[styles.userName, {color:'white', top:0, width: 360}]}>annpour@hotmail.gr</Text>
+        {/* modify email */}
+        <Text style={styles.emailTitle2}>Email</Text>
+        <View style={styles.emailField}>
+          <Text style={styles.fieldText}>annpour@hotmail.gr</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
                 resizeMode="contain"
-                style={{alignSelf: 'flex-end', width: 30, height: 30, position:'absolute', opacity: 0.6, bottom:0}}
+                style={styles.modIcon}
               ></Image>
           </TouchableOpacity>
         </View>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '85%', top:175, opacity:0.5, alignSelf:'center'}}></View>
+        <View style={[styles.underLine2, {top:175}]}></View>
 
-        <Text style={[styles.userName, {top:190}]}>Password</Text>
-        <View style={{flexDirection: 'row', top: 195, height:25}}>
-          <Text style={[styles.userName, {color:'white', top: 0, width:360}]}>*********</Text>
+        {/* modify password */}
+        <Text style={styles.passwordTitle2}>Password</Text>
+        <View style={styles.passwordField}>
+          <Text style={styles.fieldText}>*********</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
                 resizeMode="contain"
-                style={{alignSelf: 'flex-end', width: 30, height: 30, position:'absolute', opacity: 0.6, bottom:0}}
+                style={styles.modIcon}
               ></Image>
           </TouchableOpacity>
         </View>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '85%', top:195, opacity:0.5, alignSelf:'center'}}></View>
+        <View style={[styles.underLine2, {top:195}]}></View>
 
-        <Text style={[styles.user, {top:230}]}>Ρυθμίσεις</Text>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '100%', top:235, opacity:0.5}}></View>
+        {/* Settings */}
+        <Text style={styles.settingsTitle}>Ρυθμίσεις</Text>
+        <View style={[styles.underLine1, {top:235}]}></View>
+        {/* Notification settings button */}
         <View style={{top:245}}>
           <TouchableOpacity>
-            <Text style={[styles.user, {fontSize:17, fontWeight:'100', top:0}]}>Ειδοποιήσεις</Text>
+            <Text style={styles.settings}>Ειδοποιήσεις</Text>
           </TouchableOpacity>
         </View>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '100%', top:255, opacity:0.5}}></View>
-
+        <View style={[styles.underLine1, {top:255}]}></View>
+        {/* Location settings button */}
         <View style={{top:265}}>
           <TouchableOpacity>
-          <Text style={[styles.user, {top:0, fontSize:17, fontWeight:'100'}]}>Τοποθεσία & Χάρτης</Text>
+          <Text style={styles.settings}>Τοποθεσία & Χάρτης</Text>
           </TouchableOpacity>
         </View>
-        <View style={{borderBottomWidth: 1, borderColor: '#C9C4C9', width: '100%', top:275, opacity:0.5}}></View>
+        <View style={[styles.underLine1, {top:275}]}></View>
 
-        <View style={{top: 350, alignSelf:'center'}}>
+        {/* Logout button */}
+        <View style={styles.logoutButton}>
           <TouchableOpacity>
             <View style={styles.rect3}>
               <Text style={styles.logout}>Αποσύνδεση</Text>
@@ -584,9 +648,11 @@ const ProfilePage = ({navigation}) => {
             </View>
           </TouchableOpacity>
         </View>
-        <View style={{alignSelf: 'flex-end', right: 30, top: 420}}>
+
+        {/* Delete account button */}
+        <View style={styles.deleteAccountButton}>
           <TouchableOpacity>
-            <Text style={styles.delete}>Διαγραφή Λογαριασμού</Text>
+            <Text style={styles.deleteAccount}>Διαγραφή Λογαριασμού</Text>
           </TouchableOpacity>
         </View>
         
@@ -596,7 +662,7 @@ const ProfilePage = ({navigation}) => {
 };
 
 
-
+//User can find recent reports with details on a map
 const RecentReportsPage = ({navigation}) => {
   const [value, setValue] = useState('1');
 
@@ -608,13 +674,14 @@ const RecentReportsPage = ({navigation}) => {
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <View style={[styles.headersTitle, {width:244}]}>
-          <Text style={{fontFamily: 'serif',fontSize: 22}}>Πρόσφατα περιστατικά</Text>
+          <Text style={styles.recentReportsHeader}>Πρόσφατα περιστατικά</Text>
         </View>
+        {/* User can select how recent the reports on map should be (1day-1month old)  */}
         <View style={{flexDirection: 'row'}}>
-          <Text style={{fontFamily: 'serif',fontSize: 18, top:50, left:20}}>Έως:</Text>
+          <Text style={styles.until}>Έως:</Text>
           <View>
             <Dropdown 
-              style={{width:170, height:30, top:47, left: 30}}
+              style={styles.dropDown}
               placeholderStyle={{fontSize:18}}
               containerStyle={{backgroundColor:'white', borderWidth:1, borderRadius:5}}
               iconColor='white'
@@ -634,7 +701,9 @@ const RecentReportsPage = ({navigation}) => {
               />
           </View>  
         </View>
-        <View style={{width:360, height:600, overflow:'hidden', borderRadius:10, alignSelf:'center', top:70}}>
+
+        {/* Recent reports map */}
+        <View style={styles.reportsMap}>
           <MapView style={{width:360, height:600}}
             provider={MapView.PROVIDER_GOOGLE}
             ref={(ref) => (this.mapRef = ref)}
@@ -654,309 +723,6 @@ const RecentReportsPage = ({navigation}) => {
   );
 };
 
-
-
-const styles = StyleSheet.create({
-
-  container: {
-    flex: 1
-  },
-
-  //StartPage
-  walk: {
-    top: 27,
-    left: 20,
-    position: "absolute",
-    fontFamily: "sans-serif",
-    fontWeight: "bold",
-    fontStyle: "italic",
-    color: "black",
-    textShadowColor: 'grey',
-    textShadowOffset: { width: 1, height: 1},
-    textShadowRadius: 1,
-    fontSize: 20
-  },
-
-  safe: {
-    top: 27,
-    left: 60,
-    position: "absolute",
-    fontFamily: "serif",
-    fontWeight: "bold",
-    fontStyle: "italic",
-    color: "black",
-    textShadowColor: 'grey',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    fontSize: 25
-  },
-
-  image: {
-    top: 20,
-    left: 45,
-    width: 50,
-    height: 50,
-    position: "absolute",
-    transform: [
-      {
-        rotate: "50.00deg"
-      }
-    ],
-    opacity: 0.3,
-    borderWidth: 0.5,
-    borderColor: "#000000"
-  },
-
-  frontCircles1: {
-    width:280,
-    height:280, 
-    borderRadius:140,
-    backgroundColor: "#9975AE", 
-    opacity: 0.1,
-    position: 'absolute',
-    top: 110,
-    right: 220
-  },
-
-  frontCircles2: {
-    width:280,
-    height:280, 
-    borderRadius:140,
-    backgroundColor: "#9975AE", 
-    opacity: 0.2,
-    position: 'absolute',
-    top: 420,
-    left: 220
-  },
-
-  start_title: {
-    color: '#C9C4C9',
-    fontSize: 18,
-    fontFamily: 'serif',
-    fontWeight: 'bold',
-    top: 180
-  },
-
-  start_text: {
-    color: '#C9C4C9',
-    fontSize: 16,
-    fontFamily: 'serif',
-    textAlign: 'justify',
-    width: 305,
-    top: 183
-  },
-
-  login: {
-    fontFamily: 'serif',
-    fontSize: 20,
-    color: '#C9C4C9',
-    width: 270,
-    height: 45,
-    backgroundColor: '#765988',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    borderRadius: 10,
-    borderWidth: 0.4,
-    borderColor: 'white'
-  },
-  
-  signup: {
-    fontFamily: 'serif',
-    fontSize: 20,
-    color: '#C9C4C9',
-    width: 270,
-    height: 45,
-    backgroundColor: 'black',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    borderRadius: 10,
-    borderWidth: 0.4,
-    borderColor: 'white'
-  },
-
-  //LoginPage
-  circle: {
-    width:800,
-    height:800, 
-    borderRadius:400,
-    backgroundColor: "#B0A8B5",
-    position: 'absolute',
-    top: 170,
-    alignSelf: 'center'
-  },
-
-  email: {
-    color: '#3E3D3D',
-    top: 210,
-    left: 30,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    width: 330, 
-    borderBottomColor: '#4E4E4E',
-  },
-
-  password: {
-    color: '#3E3D3D',
-    top: 240,
-    left: 30,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    width: 330, 
-    borderBottomColor: '#4E4E4E'
-  },
-
-  rect: {
-    width: 140,
-    height: 45,
-    backgroundColor: '#765988',
-    borderRadius: 10,
-    borderWidth: 0.4,
-    borderColor: 'white'
-  },
-
-  logIn: {
-    fontFamily: 'serif',
-    fontSize: 20,
-    color: '#C9C4C9', 
-    top: 6, 
-    left: 15
-  },
-
-  icon: {
-    top: 3,
-    right: 10,
-    alignSelf: 'flex-end',
-    width: 35,
-    height: 35,
-    position: "absolute",
-    opacity: 0.6
-  },
-
-  //SignupPage
-  create: {
-    fontFamily: 'serif',
-    fontSize: 20,
-    color: '#C9C4C9', 
-    top: 6, 
-    left: 15
-  },
-
-  rect2: {
-    width: 180,
-    height: 45,
-    backgroundColor: '#765988',
-    borderRadius: 10,
-    borderWidth: 0.4,
-    borderColor: 'white'
-  },
-
-  username: {
-    color: '#3E3D3D',
-    top: 180,
-    left: 30,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    width: 330, 
-    borderBottomColor: '#4E4E4E',
-  },
-
-
-  //HomePage
-  profileImage: {
-    width: 35,
-    height: 35,
-    position: "absolute",
-    alignSelf: 'flex-end'
-  },
-
-
-  //ReportPage
-  headersTitle: {
-    borderBottomWidth: 2,
-    borderRadius: 5, 
-    borderColor: '#AB8FBC', 
-    top: 12, 
-    width: 243, 
-    alignSelf: 'flex-start',
-    left: 70
-  },
-
-  dropdown: {
-    backgroundColor:'#D2C8D8',
-    width: 340,
-    height: 40,
-    borderRadius: 5,
-    left: 25,
-    top: 60
-  },
-
-  placeholderStyle: {
-    color: '#878787',
-    left: 10,
-    fontSize: 16,
-  },
-
-  selectedTextStyle: {
-    left: 10,
-    fontSize: 16,
-    color: '#3E3D3D'
-  },
-
-  iconStyle: {
-    width: 20,
-    height: 20,
-    right: 5
-  },
-
-  containerStyle: {
-    backgroundColor: '#D2C8D8', 
-    borderRadius: 5
-  },
-
-
-
-//ProfilePage
-user: {
-  fontFamily: 'serif',
-  fontSize: 18, 
-  fontWeight: 'bold',
-  top:130,
-  left: 30,
-  color: 'white'
-},
-
-userName: {
-  fontFamily: 'serif',
-  fontSize: 15,
-  fontWeight: 'bold',
-  top:150,
-  left: 30, 
-  color: '#C9C4C9'
-},
-
-logout: {
-  fontFamily: 'serif',
-  fontSize: 20,
-  color: 'white',
-  fontWeight: 'bold', 
-  top: 6, 
-  left: 10
-},
-
-rect3: {
-  width: 190,
-  height: 45,
-  backgroundColor: '#161616',
-  borderRadius: 5
-},
-
-delete: {
-  fontFamily: 'serif',
-  fontSize: 14,
-  color: '#950303',
-}
-
-});
 
 
 export default App;
