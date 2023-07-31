@@ -10,14 +10,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
+
 
 
 //Main
 const App = () => {
 
   const Stack = createNativeStackNavigator();
-
+  
   return (
     //Different screens of the app
     <NavigationContainer>
@@ -56,9 +58,24 @@ const Logo = () => {
 
 //Screen that appears when user launches the app
 const SplashScreenPage = ({navigation}) => {
-  //Disappears after a sec (1000ms) - Navigates to start page
+  //Disappears after a sec (1000ms)
   setTimeout(() => {
-    navigation.replace('Start'); 
+    //Get logged user's info stored in local memory
+    AsyncStorage.multiGet(['user_id', 'user_name', 'user_email', 'user_password']).then((results)=>{
+      //if there is nothing stored in local memory , then user hasn't logged in
+      if(results[0][1]==null){
+        //Navigate to start page to sign-in or sign-up
+        navigation.replace('Start');
+      }
+      //if there is data in local memory, user has already logged in once (user stays logged in even after closing the app)
+      else {
+        // Since user is already logged in, the app navigates directly to home page, skipping the sign-in/sign-up stage
+        // User's info are also sent to home page as parameters  
+        navigation.replace('Home', {id: results[0][1], name: results[1][1], email: results[2][1], password: results[3][1]});
+        
+      }
+    })
+     
   }, 1000);
 
   return (
@@ -80,6 +97,7 @@ const SplashScreenPage = ({navigation}) => {
 
 //This page appears only when user hasn't signed in. After they sign-up they stay signed-in, unless they sign-out.
 const StartPage = ({navigation}) => {
+
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -114,6 +132,60 @@ const StartPage = ({navigation}) => {
 
 //Login
 const LoginPage = ({navigation}) => {
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [isError, setIsError] = useState(false);
+  const [message, setMessage] = useState('');
+
+  //Function called when user fills in fields in login form and presses the login button 
+  const loginHandler = () =>{
+    const parameters = {email,password};
+    
+    //Fetch data to client from server 
+    //Send given user email and password to server
+    fetch('http://192.168.1.125:3000/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parameters)
+    
+    })
+    //Get response from server
+    .then(res =>res.json())
+    .then(res =>{
+      try {
+        //if login fails, warns user
+        if(res.status!==200){
+          setIsError(true);
+          setMessage(res.message);
+        }
+        //if login succeeds, navigates to home page and sends user's info 
+        else{
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home', params: {id: res.user_id, name: res.user_name, email: res.user_email, password: res.user_password}}],
+            });
+          //Store to local memory user's info - Will be used for persist login  
+          AsyncStorage.setItem('user_id', res.user_id)
+          AsyncStorage.setItem('user_name', res.user_name)
+          AsyncStorage.setItem('user_email', res.user_email)
+          AsyncStorage.setItem('user_password', res.user_password)
+          setIsError(false);
+          setMessage(res.message);
+        }
+      }
+      catch (err) {
+        console.log(err);
+      };
+    })
+    .catch(err => {
+      console.log(err);
+    });
+  }
+
   return(
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -124,17 +196,19 @@ const LoginPage = ({navigation}) => {
         {/* Registered user's email address */}
         <View>
           <Text style={styles.emailTitle}>Email</Text>
-          <TextInput style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
+          <TextInput style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
         {/* Registered user's password for app login */}
         <View>
           <Text style={styles.passwordTitle}>Password</Text>
-          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} />
+          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
         </View>
         <Text style={styles.forgotPassword}>Forgot your password?</Text>
+        {/* Error message that appears only when there is an error while signing in (e.g. invalid password) */}
+        {isError && <Text style={[{color: 'red', top:250, alignSelf:'center'}]}>{message}</Text>}
         {/* Login button */}
         <View style={styles.loginButton}>
-          <TouchableOpacity onPress={() => navigation.navigate('Home') }>
+          <TouchableOpacity onPress={() => loginHandler()}>
             <View style={styles.rect}>
               <Text style={styles.logIn}>Είσοδος</Text>
               <Image
@@ -152,7 +226,62 @@ const LoginPage = ({navigation}) => {
 
 
 //Sign up
-const SignupPage = () => {
+const SignupPage = ({navigation}) => {
+
+  const [email, setEmail] = useState('');
+  const [username, setName] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [isError, setIsError] = useState(false);
+  const [message, setMessage] = useState('');
+
+  //Function called when user fills in fields in signup form and presses the signup button 
+  const createAccountHandler = () =>{
+    const parameters = {email,username,password};
+
+    //Fetch data to client from server 
+    //Send given user email, username and password to server
+    fetch('http://192.168.1.125:3000/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parameters)
+    
+    })
+    //Get response from server
+    .then(res =>res.json())
+    .then(res =>{
+      try {
+        //if signup fails, warns user
+        if(res.status!==200){
+          setIsError(true);
+          setMessage(res.message);
+        }
+        //if signup succeeds, navigates to home page and sends user's info (user is now logged in)
+        else{
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home', params: {id: res.user_id, name: res.user_name, email: res.user_email, password: res.user_password}}],
+            });
+          //Store to local memory user's info - Will be used for persist login
+          AsyncStorage.setItem('user_id', res.user_id)
+          AsyncStorage.setItem('user_name', res.user_name)
+          AsyncStorage.setItem('user_email', res.user_email)
+          AsyncStorage.setItem('user_password', res.user_password)
+          setIsError(false);
+          setMessage(res.message);
+        }
+      }
+      catch (err) {
+        console.log(err);
+      };
+    })
+    .catch(err => {
+      console.log(err);
+    });
+  }
+
   return(
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -163,21 +292,23 @@ const SignupPage = () => {
         {/* User sets username */}
         <View>
           <Text style={styles.usernameTitle}>Username</Text>
-          <TextInput style={styles.username} placeholder='e.g. AnnaP.' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
+          <TextInput style={styles.username} placeholder='e.g. AnnaP.' placeholderTextColor={'#878787'} onChangeText={setName} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
         {/* User sets email address */}
         <View>
           <Text style={styles.signupEmailTitle}>Email</Text>
-          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onSubmitEditing={() => { this.thirdTextInput.focus(); }}/>
+          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.thirdTextInput.focus(); }}/>
         </View>
         {/* User sets password */}
         <View>
           <Text style={styles.signupPasswordTitle}>Password</Text>
-          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} />
+          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
         </View>
+        {/* Error message that appears only when there is an error while creating account (e.g. email already exists) */}
+        {isError && <Text style={[{color: 'red', top:250, alignSelf:'center'}]}>{message}</Text>}
         {/* Create account button */}
         <View style={styles.createAccountButton}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => createAccountHandler()}>
             <View style={styles.rect2}>
               <Text style={styles.create}>Δημιουργία</Text>
               <Image
@@ -195,14 +326,15 @@ const SignupPage = () => {
 
 
 //First page that appears when user is already signed-in
-const HomePage = ({navigation}) => {
+const HomePage = ({navigation, route}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
         <Logo />
         {/* Profile button */}
         <View style={{top: 25, right: 25}}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          {/* Navigates to profile page and sends user's info as parameters */}
+          <TouchableOpacity onPress={() => navigation.navigate('Profile', {name: route.params.name, email: route.params.email, password: route.params.password})}>
             <Image 
               source={require("./icons/profile.png")} 
               resizeMode='contain' 
@@ -564,7 +696,7 @@ const SubmitReportPage = ({navigation}) => {
 
 
 //Profile
-const ProfilePage = ({navigation}) => {
+const ProfilePage = ({navigation, route}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -578,7 +710,7 @@ const ProfilePage = ({navigation}) => {
         {/* modify username */}
         <Text style={styles.userName}>Username</Text>
         <View style={styles.userNameField}>
-          <Text style={styles.fieldText}>AnnaP.</Text>
+          <Text style={styles.fieldText}>{route.params.name}</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
@@ -592,7 +724,7 @@ const ProfilePage = ({navigation}) => {
         {/* modify email */}
         <Text style={styles.emailTitle2}>Email</Text>
         <View style={styles.emailField}>
-          <Text style={styles.fieldText}>annpour@hotmail.gr</Text>
+          <Text style={styles.fieldText}>{route.params.email}</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
@@ -606,7 +738,7 @@ const ProfilePage = ({navigation}) => {
         {/* modify password */}
         <Text style={styles.passwordTitle2}>Password</Text>
         <View style={styles.passwordField}>
-          <Text style={styles.fieldText}>*********</Text>
+          <Text style={styles.fieldText}>{route.params.password}</Text>
           <TouchableOpacity>
               <Image
                 source={require("./icons/mod.png")}
@@ -637,7 +769,8 @@ const ProfilePage = ({navigation}) => {
 
         {/* Logout button */}
         <View style={styles.logoutButton}>
-          <TouchableOpacity>
+          {/* When pressing logout , logged user's info are deleted from local storage and app navigates to start page for login or singup */}
+          <TouchableOpacity onPress={()=> {AsyncStorage.multiRemove(['user_id', 'user_name', 'user_email', 'user_password']); navigation.reset({index: 0, routes: [{ name: 'Start' }],});}}>
             <View style={styles.rect3}>
               <Text style={styles.logout}>Αποσύνδεση</Text>
               <Image
