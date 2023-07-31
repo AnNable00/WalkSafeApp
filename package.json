@@ -11,9 +11,13 @@
     "react-devtools": "react-devtools"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.19.1",
     "@react-native-community/datetimepicker": "^7.1.0",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "mysql2": "^3.5.2",
     "react": "18.2.0",
     "react-native": "0.71.8",
     "react-native-auto-grow-textinput": "^1.2.1",
