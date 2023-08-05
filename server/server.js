@@ -83,6 +83,29 @@ app.post('/login', function(req,res){
   })
 })
 
+//Route for report submission
+app.post('/submit_report', function(req,res){
+  // Connecting to the database.
+  connection.getConnection(function (err, connection) {
+    //Params taken from fields of report form
+    var type_of_incident = req.body.typeOfIncident;
+    var date_time = req.body.dateTime;
+    var address = req.body.incidentAddress;
+    var latitude_coords = req.body.latitudeCoords;
+    var longitude_coords = req.body.longitudeCoords;
+    var description = req.body.description;
+    var details = req.body.detailsComments;
+    var user_id = req.body.id;
+    
+    // Insert report into database 
+    connection.query("INSERT INTO REPORTS (type_of_incident, date_time, address, latitude_coords, longitude_coords, description, details_comments, user_id) VALUES ('" + type_of_incident + "','" + date_time + "','" + address + "'," + latitude_coords + "," + longitude_coords + ",'" + description + "','" + details + "'," + user_id + ");", function (error, results) {
+      if (error) throw error;
+      //if report submission succeeds, send response to client
+      return res.json({message: 'Report submitted.', status:200 });
+    })
+      
+  })
+})
 
 
 //Route for the users table

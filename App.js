@@ -13,6 +13,8 @@ import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
 
+//local IP of the PC where the server runs
+const SERVER_IP = '192.168.1.7';
 
 
 //Main
@@ -145,7 +147,7 @@ const LoginPage = ({navigation}) => {
     
     //Fetch data to client from server 
     //Send given user email and password to server
-    fetch('http://192.168.1.125:3000/login', {
+    fetch('http://'+SERVER_IP+':3000/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -241,7 +243,7 @@ const SignupPage = ({navigation}) => {
 
     //Fetch data to client from server 
     //Send given user email, username and password to server
-    fetch('http://192.168.1.125:3000/signup', {
+    fetch('http://'+SERVER_IP+':3000/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -346,7 +348,7 @@ const HomePage = ({navigation, route}) => {
         <View style={styles.frontCircles2}></View>
         {/* Report an incident button */}
         <View style={{top:310 , alignSelf: 'center'}}>
-          <TouchableOpacity onPress={() => navigation.navigate('Report')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Report', {id: route.params.id, name: route.params.name, email: route.params.email, password: route.params.password})}>
             <Text style={styles.reportIncidentButton}>Αναφορά περιστατικού</Text>
           </TouchableOpacity>
         </View>
@@ -384,7 +386,7 @@ const requestLocationPermission = async () => {
 
 
 //User reports an incident by filling in a form
-const ReportPage = ({navigation}) => {
+const ReportPage = ({navigation, route}) => {
   const [value, setValue] = useState(null);
 
   //DateTimePicker - User sets date & time of incident
@@ -407,6 +409,7 @@ const ReportPage = ({navigation}) => {
       setTime(selectedTime);
       setShow(Platform.OS === 'ios');
       setMode('date');
+      setDateTime(selectedValue);
     }
     setShowDateTime(true);
   };
@@ -464,8 +467,54 @@ const ReportPage = ({navigation}) => {
   }
 
   //
-  const [addressMarked, setAddressMarked] = useState('') 
+  const [addressMarked, setAddressMarked] = useState(null) 
   const [renderMarkerbySearch, setRenderMarkerbySearch] = useState(false);
+
+
+  //params to store in database
+  const [typeOfIncident, setTypeOfIncident] = useState(null);
+  const [dateTime, setDateTime] = useState(null);
+  const incidentAddress = addressMarked;
+  const [description, setDescription] = useState(null);
+  const [detailsComments, setDetailsComments] = useState(null);
+  const latitudeCoords = MarkerCoords.latitude;
+  const longitudeCoords = MarkerCoords.longitude;
+  const user_id = route.params.id;
+
+  const [isError, setIsError] = useState(false);
+  const [message, setMessage] = useState('');
+
+
+   //Function called when user fills in fields in report form and presses the proceed button 
+  const proceedReportSubmissionHandler = () =>{
+    
+    // Check if all fields of the form are filled in (except the details field which is optional)
+    if(!typeOfIncident || !dateTime || !incidentAddress || !description){
+      setIsError(true);
+      setMessage('Fill in all the required fields!')
+    }
+    else {
+      //change date format since database requires specific format for date&time (yyyy-mm-dd hh:mm)
+      var hours = dateTime.getHours() +3; //add 3 hours because when value is stored to database goes 3 hours back
+      if (hours==24) hours='00'; //if 21.00 is selected, by adding 3 hours goes to 24.00 which is not valid for inserting in database (=>00.00)
+      if(hours==25) hours='01'; //22.00 + 3 = 25 => 01.00
+      if(hours==26) hours='02'; //23.00 + 3 = 26 => 02.00
+      var formattedDate = `${dateTime.getFullYear()}-${dateTime.getMonth()+1}-${dateTime.getDate()} ${hours}:${dateTime.getMinutes()}`
+      
+      //Check if description is detailed enough
+      if(description.length <40){
+        setIsError(true);
+        setMessage('Description should be more detailed!')
+      }
+      //if report is valid , navigates to submit report page and sends all the report parameters 
+      else{
+        setIsError(false);
+        setMessage('Report is valid.')
+        navigation.navigate('SubmitReport', {typeOfIncident:typeOfIncident, dateTime:formattedDate, incidentAddress:incidentAddress, description:description, detailsComments:detailsComments, latitudeCoords:latitudeCoords, longitudeCoords:longitudeCoords, id:user_id, name:route.params.name, email:route.params.email, password:route.params.password}) 
+      }
+      
+    }
+  }
 
 
   return (
@@ -497,6 +546,7 @@ const ReportPage = ({navigation}) => {
               value={value}
               onChange={item => {
                 setValue(item.value);
+                setTypeOfIncident(item.label);
               }}
               />
           </View>
@@ -641,17 +691,18 @@ const ReportPage = ({navigation}) => {
           {/* User's description of the perpetrator */}
           <Text style={styles.descriptionTitle}>Περιγραφή θύτη</Text>
           <View style={styles.descriptionField}>
-            <TextInput multiline={true} numberOfLines={3} blurOnSubmit={true} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε μία σύντομη περιγραφή του θύτη' placeholderTextColor={'#878787'}></TextInput>
+            <TextInput multiline={true} numberOfLines={3} blurOnSubmit={true} onChangeText={setDescription} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε μία σύντομη περιγραφή του θύτη' placeholderTextColor={'#878787'}></TextInput>
           </View>
           {/* User's further details & comments about the incident */}
           <Text style={styles.detailsTitle}>Λεπτομέρειες & Σχόλια (προαιρετικά)</Text>
           <View style={styles.detailsField}>
-            <TextInput multiline={true} numberOfLines={4} blurOnSubmit={true} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε επιπλέον λεπτομέρειες σχετικά με το περιστατικό' placeholderTextColor={'#878787'} ></TextInput>
+            <TextInput multiline={true} numberOfLines={4} blurOnSubmit={true} onChangeText={setDetailsComments} style={{fontFamily:'serif', fontSize:16, left:5, verticalAlign: 'top', width: 330, color:'#3E3D3D'}} placeholder='Δώστε επιπλέον λεπτομέρειες σχετικά με το περιστατικό' placeholderTextColor={'#878787'} ></TextInput>
           </View>
-        
+          {/* Error message that appears only when there is an error while reporting an incident (e.g. all fields are required) */}
+          {isError && <Text style={[{color: 'red', top:150, alignSelf:'center'}]}>{message}</Text>}
           {/* Proceed submit button */}
           <View style={styles.proceedSubmitButton}>
-            <TouchableOpacity onPress={() => navigation.navigate('SubmitReport')}>
+            <TouchableOpacity onPress={() => proceedReportSubmissionHandler()}>
               <View style={[styles.rect, {width: 150}]}>
                 <Text style={styles.proceedSubmitButtonText}>Συνέχεια</Text>
                 <Image
@@ -670,8 +721,37 @@ const ReportPage = ({navigation}) => {
 };
 
 
-//User confirms the report submission 
-const SubmitReportPage = ({navigation}) => {
+//User confirms the report submission - Report info are stored into the database
+const SubmitReportPage = ({navigation,route}) => {
+
+  //Function called when user presses the submit button
+  const reportSubmissionHandler = () => {
+     
+    //Send to server all the report info the user submitted in previous page
+    fetch('http://'+SERVER_IP+':3000/submit_report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(route.params)
+    
+    })
+    //Get response from server
+    .then(res =>res.json())
+    .then(res =>{
+        //if report submission succeeds, navigates to home page
+        if(res.status==200){
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home', params: {id: route.params.id, name: route.params.name, email: route.params.email, password: route.params.password}}],
+          });
+        }
+      })
+    .catch(err => {
+      console.log(err);
+    });
+  }
+
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -683,7 +763,7 @@ const SubmitReportPage = ({navigation}) => {
         <Text style={styles.infoText1}>Πατήστε υποβολή για να δημοσιεύσετε το περιστατικό στην εφαρμογή.</Text>
         <Text style={styles.infoText2}>Μετά την δημοσίευση, το περιστατικό θα εμφανίζεται στο χάρτη με τα πρόσφατα περιστατικά.</Text>
         <View style={styles.submitButton}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => reportSubmissionHandler()}>
               <View style={[styles.rect]}>
                 <Text style={styles.submitButtonText}>Υποβολή</Text>
               </View>

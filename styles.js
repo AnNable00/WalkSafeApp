@@ -544,7 +544,8 @@ const styles = StyleSheet.create({
       top: 60, 
       left: 25, 
       fontFamily: 'serif', 
-      fontSize: 18
+      fontSize: 18,
+      color:'#C9C4C9'
     },
   
     infoText1:{
