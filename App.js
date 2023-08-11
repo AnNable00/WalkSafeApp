@@ -7,14 +7,14 @@ import {Dropdown} from 'react-native-element-dropdown'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { AutoGrowTextInput } from 'react-native-auto-grow-textinput';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
+import MapView, {PROVIDER_GOOGLE, Marker, Callout} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
 
 //local IP of the PC where the server runs
-const SERVER_IP = '192.168.1.7';
+const SERVER_IP = '192.168.1.125';
 
 
 //Main
@@ -436,7 +436,7 @@ const ReportPage = ({navigation, route}) => {
 
   //Map configurations - User selects on map where the incident took place
   const [mapVisible, setMapVisible] = useState(false);
-  //intial latitude-longitude where map is focused
+  //initial latitude-longitude where map is focused
   const [focusLatitude, setFocusLatitude] = useState(38.125664);
   const [focusLongitude, setFocusLongitude] = useState(23.148006);
   //map zoom level 
@@ -780,95 +780,96 @@ const ProfilePage = ({navigation, route}) => {
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
-        <View style={[styles.headersTitle, {width:80}]}>
-          <Text style={styles.profileHeader}>Προφίλ</Text>
-        </View>
-        <View style={styles.backCircle}></View>
-        <Text style={styles.user}>Χρήστης</Text>
-        <View style={styles.underLine1}></View>
+        <KeyboardAwareScrollView contentContainerStyle={{paddingBottom:450}} enableOnAndroid extraScrollHeight={100} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled'>
+          <View style={[styles.headersTitle, {width:80}]}>
+            <Text style={styles.profileHeader}>Προφίλ</Text>
+          </View>
+          <View style={styles.backCircle}></View>
+          <Text style={styles.user}>Χρήστης</Text>
+          <View style={styles.underLine1}></View>
 
-        {/* modify username */}
-        <Text style={styles.userName}>Username</Text>
-        <View style={styles.userNameField}>
-          <Text style={styles.fieldText}>{route.params.name}</Text>
-          <TouchableOpacity>
-              <Image
-                source={require("./icons/mod.png")}
-                resizeMode="contain"
-                style={styles.modIcon}
-              ></Image>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.underLine2}></View>
+          {/* modify username */}
+          <Text style={styles.userName}>Username</Text>
+          <View style={styles.userNameField}>
+            <Text style={styles.fieldText}>{route.params.name}</Text>
+            <TouchableOpacity>
+                <Image
+                  source={require("./icons/mod.png")}
+                  resizeMode="contain"
+                  style={styles.modIcon}
+                ></Image>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.underLine2}></View>
 
-        {/* modify email */}
-        <Text style={styles.emailTitle2}>Email</Text>
-        <View style={styles.emailField}>
-          <Text style={styles.fieldText}>{route.params.email}</Text>
-          <TouchableOpacity>
-              <Image
-                source={require("./icons/mod.png")}
-                resizeMode="contain"
-                style={styles.modIcon}
-              ></Image>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.underLine2, {top:175}]}></View>
+          {/* modify email */}
+          <Text style={styles.emailTitle2}>Email</Text>
+          <View style={styles.emailField}>
+            <Text style={styles.fieldText}>{route.params.email}</Text>
+            <TouchableOpacity>
+                <Image
+                  source={require("./icons/mod.png")}
+                  resizeMode="contain"
+                  style={styles.modIcon}
+                ></Image>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.underLine2, {top:175}]}></View>
 
-        {/* modify password */}
-        <Text style={styles.passwordTitle2}>Password</Text>
-        <View style={styles.passwordField}>
-          <Text style={styles.fieldText}>{route.params.password}</Text>
-          <TouchableOpacity>
-              <Image
-                source={require("./icons/mod.png")}
-                resizeMode="contain"
-                style={styles.modIcon}
-              ></Image>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.underLine2, {top:195}]}></View>
+          {/* modify password */}
+          <Text style={styles.passwordTitle2}>Password</Text>
+          <View style={styles.passwordField}>
+            <Text style={styles.fieldText}>{route.params.password}</Text>
+            <TouchableOpacity>
+                <Image
+                  source={require("./icons/mod.png")}
+                  resizeMode="contain"
+                  style={styles.modIcon}
+                ></Image>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.underLine2, {top:195}]}></View>
 
-        {/* Settings */}
-        <Text style={styles.settingsTitle}>Ρυθμίσεις</Text>
-        <View style={[styles.underLine1, {top:235}]}></View>
-        {/* Notification settings button */}
-        <View style={{top:245}}>
-          <TouchableOpacity>
-            <Text style={styles.settings}>Ειδοποιήσεις</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.underLine1, {top:255}]}></View>
-        {/* Location settings button */}
-        <View style={{top:265}}>
-          <TouchableOpacity>
-          <Text style={styles.settings}>Τοποθεσία & Χάρτης</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.underLine1, {top:275}]}></View>
+          {/* Settings */}
+          <Text style={styles.settingsTitle}>Ρυθμίσεις</Text>
+          <View style={[styles.underLine1, {top:235}]}></View>
+          {/* Notification settings button */}
+          <View style={{top:245}}>
+            <TouchableOpacity>
+              <Text style={styles.settings}>Ειδοποιήσεις</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.underLine1, {top:255}]}></View>
+          {/* Location settings button */}
+          <View style={{top:265}}>
+            <TouchableOpacity>
+            <Text style={styles.settings}>Τοποθεσία & Χάρτης</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.underLine1, {top:275}]}></View>
 
-        {/* Logout button */}
-        <View style={styles.logoutButton}>
-          {/* When pressing logout , logged user's info are deleted from local storage and app navigates to start page for login or singup */}
-          <TouchableOpacity onPress={()=> {AsyncStorage.multiRemove(['user_id', 'user_name', 'user_email', 'user_password']); navigation.reset({index: 0, routes: [{ name: 'Start' }],});}}>
-            <View style={styles.rect3}>
-              <Text style={styles.logout}>Αποσύνδεση</Text>
-              <Image
-                source={require("./icons/sign-out.png")}
-                resizeMode="contain"
-                style={[styles.icon, {right:5, top:5}]}
-              ></Image>
-            </View>
-          </TouchableOpacity>
-        </View>
+          {/* Logout button */}
+          <View style={styles.logoutButton}>
+            {/* When pressing logout , logged user's info are deleted from local storage and app navigates to start page for login or singup */}
+            <TouchableOpacity onPress={()=> {AsyncStorage.multiRemove(['user_id', 'user_name', 'user_email', 'user_password']); navigation.reset({index: 0, routes: [{ name: 'Start' }],});}}>
+              <View style={styles.rect3}>
+                <Text style={styles.logout}>Αποσύνδεση</Text>
+                <Image
+                  source={require("./icons/sign-out.png")}
+                  resizeMode="contain"
+                  style={[styles.icon, {right:5, top:5}]}
+                ></Image>
+              </View>
+            </TouchableOpacity>
+          </View>
 
-        {/* Delete account button */}
-        <View style={styles.deleteAccountButton}>
-          <TouchableOpacity>
-            <Text style={styles.deleteAccount}>Διαγραφή Λογαριασμού</Text>
-          </TouchableOpacity>
-        </View>
-        
+          {/* Delete account button */}
+          <View style={styles.deleteAccountButton}>
+            <TouchableOpacity>
+              <Text style={styles.deleteAccount}>Διαγραφή Λογαριασμού</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareScrollView>
       </View>
     </LinearGradient>
   );
@@ -877,11 +878,89 @@ const ProfilePage = ({navigation, route}) => {
 
 //User can find recent reports with details on a map
 const RecentReportsPage = ({navigation}) => {
-  const [value, setValue] = useState('1');
 
+  //initial value of dropdown list
+  const [value, setValue] = useState('31');
+
+  //initial latitude-longitude where map is focused
   const [focusLatitude, setFocusLatitude] = useState(38.125664);
   const [focusLongitude, setFocusLongitude] = useState(23.148006);
+  //map zoom level 
   const [latDelta, setLatDelta] = useState(7);
+
+  //User's Location
+  //Function to check permissions and get user's current location
+  const getLocation = () => {
+    const result = requestLocationPermission();
+    result.then(res => {
+      if (res) {
+        Geolocation.getCurrentPosition(
+          position => {
+            //Focus map on user's location
+            setFocusLatitude(position.coords.latitude)
+            setFocusLongitude(position.coords.longitude)
+          },
+          error => {
+            console.log(error.code, error.message);
+          },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        );
+      }
+    });
+  }
+
+  const [renderMarker, setRenderMarker] = useState(false)
+  const [reports, setReports] = useState();
+
+  //function that fetches reports from database
+  const fetchReportsFromServer =  async() => {
+    return fetch('http://'+SERVER_IP+':3000/reports', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    
+    })
+    //Get response from server
+    .then(res => res.json())
+    .then(res =>{ 
+      // console.log(res)
+      //store the reports from database to an array of objects
+      setReports(res)
+      //set markers on map visible
+      setRenderMarker(true);
+    })
+    .catch(err => {
+      console.log(err);
+    });
+  }
+
+  //function called every time the recent reports screen loads
+  useEffect(() => {
+    //request user's current location
+    getLocation();
+    //set map zoom level (applies more zoom)
+    setLatDelta(0.03);
+    //fetch and render reports on map
+    fetchReportsFromServer();
+  }, [])
+  
+  //change format of date stored in database (yyyy-mm-ddThh:mm:ss.000Z) to a more user friendly one (dd-mm-yyyy hh:mm)
+  const formatDateTime = (val) => {
+    const date = val.split("T")[0].trim();
+    const year = date.split("-")[0].trim();
+    const month = date.split("-")[1].trim();
+    const day = date.split("-")[2].trim();
+    var time = val.split("T")[1].trim();
+    const hour = time.split(":",2)[0];
+    const minute = time.split(":",2)[1];
+    dateTime = day + '-' + month + '-' + year + ' ' + hour + ':' + minute;
+    return dateTime;
+  }
+
+  const [markerBubbleVisible, setMarkerBubbleVisible] = useState(false)
+  const [reportIndex, setReportIndex] = useState()
+
 
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
@@ -898,10 +977,11 @@ const RecentReportsPage = ({navigation}) => {
               placeholderStyle={{fontSize:18}}
               containerStyle={{backgroundColor:'white', borderWidth:1, borderRadius:5}}
               iconColor='white'
+              selectedTextStyle={{color:'#C9C4C9'}}
               itemTextStyle= {{color:'black', height:20, bottom:10}}
               itemContainerStyle={{borderRadius:5, borderBottomWidth:0.2, height:40}}
               activeColor='#DBD9D9'
-              data={[{label: '1 μήνα πριν', value:'1'}, {label: '2 εβδομάδες πριν', value:'2'}, {label: '1 εβδομάδα πριν', value:'3'}, {label: '1 ημέρα πριν', value:'4'}]}
+              data={[{label: '1 μήνα πριν', value:'31'}, {label: '2 εβδομάδες πριν', value:'14'}, {label: '1 εβδομάδα πριν', value:'7'}, {label: '2 ημέρες πριν', value:'1'}, {label: '1 ημέρα πριν', value:'0'}]}
               maxHeight={140}
               labelField="label"
               valueField="value"
@@ -927,9 +1007,117 @@ const RecentReportsPage = ({navigation}) => {
               longitude: focusLongitude,
               latitudeDelta: latDelta,
               longitudeDelta: 0,
-            }} 
+            }}
+            showsUserLocation={true}
           >
+          {/* render a marker for every report*/}
+          {renderMarker && reports.map(report => 
+            { 
+              // render the marker only if the report is recent enough, based on user's selection in dropdown list
+              // to check how recent a report is, subtract the date of the report from current date 
+              // the result is in milliseconds, so divide by 1000*60*60*24 to turn it into days
+              // when the result is in hours, add 3 since Date() returns date that is 3 hours behind the current time
+              if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value){
+                return (
+                  <Marker key={report.report_id} 
+                          // by pressing on the marker , a bubble with the report's details appears - index of the report in the array of reports is also stored
+                          onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
+                          // marker coordinates
+                          coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
+                                            
+                  </Marker>)
+              }
+              
+            })}  
+            {/* except for the marker icon, a text is also rendered next to the marker, that contains the date of the report */}
+            {/* the text is rendered as a marker in order to stay at the same spot even after moving the map */}
+            {renderMarker && reports.map(report => 
+            {
+              // render the text only if the respective marker in rendered
+              if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value){
+                return (
+                  <Marker key={report.report_id} 
+                          //set an offset to the text's position to not overlap the marker
+                          anchor={{x:-0.05,y:0.3}}
+                          // by pressing on the text, the bubble with the report's details can also appear
+                          onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
+                          coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
+                    <Text style={styles.markerLabel}>{formatDateTime(report.date_time)}</Text>               
+                  </Marker>)
+              }
+              
+            })}            
           </MapView>
+          {/* render the bubble with the report's details only when the marker or the text is pressed (when markerBubbleVisible is set true)*/}
+          {markerBubbleVisible && 
+            <View style={styles.markerBubble}>
+              {/* type of incident */}
+              <View style={styles.typeOfIncidentHeader}>
+                <Text style={styles.typeOfIncidentText}>{reports[reportIndex].type_of_incident}</Text>
+              </View>
+              {/* date */}
+              <View style={styles.dateTimeHeader}>
+                <Text style={{width: 30, height:30}}>
+                  <Image
+                    source={require("./icons/time.png")}
+                    resizeMode="center"
+                    style={styles.timeIcon}
+                  ></Image>
+                </Text>
+                <Text style={styles.dateTimeText}>{formatDateTime(reports[reportIndex].date_time)}</Text> 
+              </View>   
+              {/* address */}
+              <View style={styles.locationHeader}>
+                <Text style={{width: 30, height:35}}>
+                  <Image
+                    source={require("./icons/spot.png")}
+                    resizeMode="center"
+                    style={styles.locationIcon}
+                  ></Image>
+                </Text>
+                <Text style={styles.locationText}>{reports[reportIndex].address}</Text> 
+              </View> 
+              {/* description of perpetrator */}
+              <View style={styles.descriptionHeader}>
+                <Text style={{width: 30, height:30}}>
+                  <Image
+                    source={require("./icons/perpetrator.png")}
+                    resizeMode="center"
+                    style={styles.perpetratorIcon}
+                  ></Image>
+                </Text>
+                <Text style={styles.descriptionText}>{reports[reportIndex].description}</Text> 
+              </View>  
+               {/* details_comments (if given) */}
+              {reports[reportIndex].details_comments!='null' && <View style={styles.detailsHeader}>
+                <Text style={{width: 30, height:30}}>
+                  <Image
+                    source={require("./icons/victim.png")}
+                    resizeMode="center"
+                    style={styles.detailsIcon}
+                  ></Image>
+                </Text>
+                <Text style={styles.detailsText}>{reports[reportIndex].details_comments}</Text> 
+              </View>}  
+               {/* if details not given */}
+              {reports[reportIndex].details_comments=='null' && <View style={styles.detailsHeader}>
+                <Text style={{width: 30, height:30}}>
+                  <Image
+                    source={require("./icons/victim.png")}
+                    resizeMode="center"
+                    style={styles.detailsIcon}
+                  ></Image>
+                </Text>
+                <Text style={styles.detailsText}>(Χωρίς λεπτομέρειες)</Text> 
+              </View>}  
+              {/* close button */}
+              <View style={styles.closeMapButton}>
+                <TouchableOpacity onPress={() => setMarkerBubbleVisible(false)}>
+                  <Text style={styles.closeMapButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          }
         </View>
       </View>
     </LinearGradient>
