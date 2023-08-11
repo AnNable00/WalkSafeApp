@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     },
   
     loginButton:{
-      top: 400, 
+      top: 360, 
       right: 30, 
       alignSelf: 'flex-end'
     },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     },
   
     createAccountButton:{
-      top: 330, 
+      top: 310, 
       right: 30, 
       alignSelf: 'flex-end'
     },
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     deleteAccountButton:{
       alignSelf: 'flex-end', 
       right: 30, 
-      top: 420
+      top: 390
     },
   
     deleteAccount: {
@@ -771,12 +771,150 @@ const styles = StyleSheet.create({
   
     reportsMap:{
       width:360, 
-      height:600, 
+      height:'70%', 
       overflow:'hidden', 
       borderRadius:10, 
       alignSelf:'center', 
       top:70
     },
+
+    markerBubble:{
+      backgroundColor:'#FFFBFF', 
+      width:300, 
+      height:'65%',  
+      opacity:0.9, 
+      borderRadius:10,
+      position:'absolute',
+      alignSelf:'center',
+      top:'20%'
+    },
+
+    typeOfIncidentText:{
+      fontFamily: 'serif',
+      fontSize: 17,
+      color:'#353535', 
+      fontWeight: 'bold',
+      
+    },
+
+    typeOfIncidentHeader:{
+      borderBottomColor: '#999999',
+      borderBottomWidth: 2,
+      width: 260,
+      height:30,
+      top:20,
+      justifyContent:'center',
+      alignSelf:'center'
+      
+    },
+
+    dateTimeText:{
+      fontFamily: 'serif',
+      fontSize: 15,
+      color:'#353535',
+      alignSelf:'center',
+      left:10
+    },
+
+    dateTimeHeader:{
+      flexDirection: 'row',
+      borderBottomColor: '#CBCBCB',
+      borderBottomWidth: 1.5,
+      width: 260,
+      height:'auto',
+      top:30,
+      alignSelf:'center'
+    },
+
+    timeIcon:{
+      width: 20,
+      height: 20     
+    },
+
+    locationHeader:{
+      flexDirection: 'row',
+      borderBottomColor: '#CBCBCB',
+      borderBottomWidth: 1.5,
+      width: 260,
+      height:'auto',
+      top:40,
+      alignSelf:'center'
+      
+    },
+
+    locationIcon:{
+      width: 25,
+      height: 25     
+    },
+
+    locationText:{
+      fontFamily: 'serif',
+      fontSize: 15,
+      color:'#353535',
+      alignSelf:'center',
+      left:10,
+      width: 220
+    },
+
+    descriptionHeader:{
+      flexDirection: 'row',
+      borderBottomColor: '#CBCBCB',
+      borderBottomWidth: 1.5,
+      width: 260,
+      height:'auto',
+      top:50,
+      alignSelf:'center'
+      
+    },
+
+    perpetratorIcon:{
+      width: 25,
+      height: 25     
+    },
+
+    descriptionText:{
+      fontFamily: 'serif',
+      fontSize: 15,
+      color:'#353535',
+      alignSelf:'center',
+      left:10,
+      width: 220
+    },
+
+    detailsHeader:{
+      flexDirection: 'row',
+      borderBottomColor: '#CBCBCB',
+      borderBottomWidth: 1.5,
+      width: 260,
+      height:'auto',
+      top:60,
+      alignSelf:'center'
+      
+    },
+
+    detailsIcon:{
+      width: 25,
+      height: 25     
+    },
+
+    detailsText:{
+      fontFamily: 'serif',
+      fontSize: 15,
+      color:'#353535',
+      alignSelf:'center',
+      left:10,
+      width: 220
+    },
+
+    markerLabel:{
+      color:'red', 
+      padding:3, 
+      borderWidth:0.5, 
+      borderRadius:10, 
+      borderTopLeftRadius:0, 
+      backgroundColor:'white', 
+      fontSize:11
+    }
   
   });
 
