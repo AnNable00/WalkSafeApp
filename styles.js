@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
       width:'100%', 
       height:'100%', 
       backgroundColor:'grey', 
-      opacity:0.5
+      opacity:0.7
     },
   
     mapModal:{
@@ -914,6 +914,181 @@ const styles = StyleSheet.create({
       borderTopLeftRadius:0, 
       backgroundColor:'white', 
       fontSize:11
+    },
+
+    findSafestRoute:{
+      width:360, 
+      height: 50, 
+      backgroundColor:'#9975AE',
+      top:'13%',
+      alignSelf:'center',
+      borderTopLeftRadius:10,
+      borderTopRightRadius:10,
+      justifyContent:'center'
+    },
+    
+    findSafestRouteText:{
+      fontFamily: 'serif',
+      fontSize: 16,
+      color:'white',
+      alignSelf:'center',
+      fontWeight:'bold'
+    },
+
+    findSafestRouteWindow:{
+      width:360, 
+      height:380, 
+      backgroundColor:'#9975AE', 
+      marginTop:'auto',
+      alignSelf:'center',
+      borderTopLeftRadius:10,
+      borderTopRightRadius:10
+    },
+
+    closeSafestRouteWindow:{
+      alignSelf:'center', 
+      position:'absolute',  
+      width:40,
+      height:30,
+      top:0,
+      borderBottomWidth:1,
+      justifyContent:'center',
+      borderRadius: 20
+    },
+
+    closeSafestRouteWindowIcon:{
+      width: 20,
+      height: 15,
+      alignSelf:'center'
+    },
+
+    findSafestRouteText2:{
+      fontFamily: 'serif',
+      fontSize: 14,
+      color:'white',
+      alignSelf:'center',
+      marginTop:40
+    },
+
+    select:{
+      width:290,
+      height:40,
+      backgroundColor: '#C0A1D3',
+      marginTop: 5,
+      borderRadius: 10,
+      alignSelf: 'center',
+      flexDirection: 'row'
+    },
+
+    selectText:{
+      fontFamily: 'serif',
+      fontSize: 15,
+      color:'white',
+      left: 10,
+      width :290,
+      top:8
+    },
+
+    proceedButton:{
+      width:70,
+      height: 35,
+      backgroundColor: '#694F78',
+      borderRadius:10,
+      borderWidth:0.5,
+      borderColor: 'white',
+      alignSelf: 'flex-end',
+      marginTop: 15,
+      right:15
+    },
+
+    proceedButtonIcon:{      
+      width: 50,
+      height: 35,
+      alignSelf:'center'
+    },
+
+    selectHeaderText:{
+      fontFamily: 'serif',
+      fontSize: 14,
+      color:'white',
+      left: 40,
+      marginTop:10
+    },
+
+    selectHeader:{
+      flexDirection:'row', 
+      width:290, 
+      justifyContent:'space-between'
+    },
+
+    useCurrentLocationButton:{
+      backgroundColor:'#805599', 
+      borderRadius:10, 
+      borderBottomWidth:0.8, 
+      marginTop:10
+    },
+
+    useCurrentLocationButtonText:{
+      fontFamily:'serif', 
+      fontSize:10, 
+      margin:3,
+      color:'#C9C4C9'
+    },
+
+    clearButton:{
+      top:20, left:10, 
+      borderBottomWidth:0.5, 
+      width:100, 
+      borderRadius:10, 
+      height:20
+    },
+
+    clearButtonText:{
+      alignSelf:'center', 
+      color:'black', 
+      opacity:0.5, 
+      fontFamily:'serif'
+    },
+
+    loadingWindow:{
+      width:'100%', 
+      height:'100%', 
+      position:'absolute'
+    },
+
+    loadingAnimation:{
+      width:200,
+      height:100, 
+      backgroundColor:'white', 
+      position:'absolute', 
+      alignSelf:'center', 
+      top:'40%', 
+      borderRadius:10, 
+      justifyContent:'center'
+    },
+
+    loadingAnimationText:{
+      color:'black', 
+      fontFamily:'serif',
+      fontSize:18, 
+      opacity:0.5, 
+      alignSelf:'center'
+    },
+
+    routePointMarker:{
+      backgroundColor:'purple', 
+      width:23, 
+      height:23, 
+      borderRadius:12.5, 
+      justifyContent:'center', 
+      borderWidth:0.5
+    },
+
+    routePointMarkerText:{
+      fontSize:18, 
+      color:'white', 
+      alignSelf:'center', 
+      bottom:2
     }
   
   });
