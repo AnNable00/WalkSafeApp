@@ -7,11 +7,16 @@ import {Dropdown} from 'react-native-element-dropdown'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { AutoGrowTextInput } from 'react-native-auto-grow-textinput';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MapView, {PROVIDER_GOOGLE, Marker, Callout} from 'react-native-maps';
+import MapView, {PROVIDER_GOOGLE, Marker, Callout, Polyline, Circle} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
+import MapViewDirections from 'react-native-maps-directions';
+import polyline from '@mapbox/polyline';
+import { booleanPointOnLine} from '@turf/boolean-point-on-line';
+import * as turf from '@turf/turf';
+import * as Animatable from 'react-native-animatable';
 
 //local IP of the PC where the server runs
 const SERVER_IP = '192.168.1.125';
@@ -456,6 +461,7 @@ const ReportPage = ({navigation, route}) => {
             //Focus map on user's location
             setFocusLatitude(position.coords.latitude)
             setFocusLongitude(position.coords.longitude)
+            setLatDelta(0.02)
           },
           error => {
             console.log(error.code, error.message);
@@ -679,7 +685,7 @@ const ReportPage = ({navigation, route}) => {
             
             {/* Open map button */}
             {/* When map opens , user is asked to grant permission for access to their location */}
-            <TouchableOpacity onPress={() => {setMapVisible(true); getLocation(); setLatDelta(0.02)}}>
+            <TouchableOpacity onPress={() => {setMapVisible(true); getLocation();}}>
               <Image
                     source={require("./icons/map.png")}
                     resizeMode="contain"
@@ -876,7 +882,9 @@ const ProfilePage = ({navigation, route}) => {
 };
 
 
+
 //User can find recent reports with details on a map
+let i=0;
 const RecentReportsPage = ({navigation}) => {
 
   //initial value of dropdown list
@@ -888,7 +896,6 @@ const RecentReportsPage = ({navigation}) => {
   //map zoom level 
   const [latDelta, setLatDelta] = useState(7);
 
-  //User's Location
   //Function to check permissions and get user's current location
   const getLocation = () => {
     const result = requestLocationPermission();
@@ -899,6 +906,8 @@ const RecentReportsPage = ({navigation}) => {
             //Focus map on user's location
             setFocusLatitude(position.coords.latitude)
             setFocusLongitude(position.coords.longitude)
+            //set map zoom level (applies more zoom)
+            setLatDelta(0.03);
           },
           error => {
             console.log(error.code, error.message);
@@ -910,6 +919,7 @@ const RecentReportsPage = ({navigation}) => {
   }
 
   const [renderMarker, setRenderMarker] = useState(false)
+  //object array for storing reports from database
   const [reports, setReports] = useState();
 
   //function that fetches reports from database
@@ -939,8 +949,6 @@ const RecentReportsPage = ({navigation}) => {
   useEffect(() => {
     //request user's current location
     getLocation();
-    //set map zoom level (applies more zoom)
-    setLatDelta(0.03);
     //fetch and render reports on map
     fetchReportsFromServer();
   }, [])
@@ -960,7 +968,202 @@ const RecentReportsPage = ({navigation}) => {
 
   const [markerBubbleVisible, setMarkerBubbleVisible] = useState(false)
   const [reportIndex, setReportIndex] = useState()
+  //array for storing each point (latitude,longitude) of a route returned by google directions api
+  const [points, setPoints] = useState()
+  const [renderRoute, setRenderRoute] = useState(false)
+  //coords of a waypoint added to route when route passes through a report, in order to create a safest route
+  const [waypointLatitude, setWaypointLatitude] = useState(null)
+  const [waypointLongitude, setWaypointLongitude] = useState(null)
+  //show loading screen when a route is created
+  const [showLoading, setShowLoading] = useState(false)
+  
+  //coords of route start point selected by user
+  const [startCoords, setStartCoords] = useState()
+  //coords of route destination point selected by user
+  const [destinationCoords, setDestinationCoords] = useState()
+  //coords of route waypoint selected by user
+  const [nodeCoords, setNodeCoords] = useState()
+  
+  const [createSafestRoute, setCreateSafestRoute] = useState (false)
+  const [reFetch, setRefetch] = useState(0)
+  const [recreateSafestRoute, setRecreateSafestRoute] = useState(false)
+  const [retry, setRetry] = useState(false)
 
+  //fetch a route from google directions api and check if it's safe
+  const fetchRoutePoints = () => {
+    //coords of start point of the route
+    const start_latitude = startCoords.latitude
+    const start_longitude = startCoords.longitude
+    //coords of destination point of the route
+    const destination_latitude = destinationCoords.latitude
+    const destination_longitude = destinationCoords.longitude
+    //coords of waypoint added by user
+    let node_latitude = 0
+    let node_longitude = 0
+    //coords of a waypoint added to route automatically when route passes through a report, in order to create a safest route
+    let waypoint_latitude = waypointLatitude
+    let waypoint_longitude = waypointLongitude 
+    //if user selected a waypoint, set the node coords with those of the waypoint
+    if(nodeCoords!=null){
+      node_latitude = nodeCoords.latitude
+      node_longitude = nodeCoords.longitude
+    }
+    // since node coords shouldn't be null (or else the fetch function below wouldn't work properly), if user didn't select a waypoint,
+    // set the node coords with the coords of start point (this way it's like there is no waypoint)
+    else {
+      node_latitude = startCoords.latitude
+      node_longitude =  startCoords.longitude
+    }
+    //if the waypoint which is added to route automatically isn't defined yet, set an initial value like the node coords above
+    if(waypoint_latitude==null && waypoint_longitude==null){
+      waypoint_latitude = destinationCoords.latitude
+      waypoint_longitude = destinationCoords.longitude
+    }
+    //fetch a route from google directions api based on start,destination and node points selected by user, as well as the waypoint added automatically
+    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${start_latitude}%2C${start_longitude}&destination=${destination_latitude}%2C${destination_longitude}&waypoints=via:${node_latitude}%2C${node_longitude}%7Cvia:${waypoint_latitude}%2C${waypoint_longitude}&mode=walking&key=AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM`).then(res => {return res.json()})
+    .then(result => {
+      //path stores the coords of each point of the route as object ([{latitude:lat, longitude:lng}, {...}]) - this format will be used in the component <Polyline>
+      let path = []
+      //polylineGeoJSON stores the coords of each point of the route as GeoJSON ([lat,lng], [...]) - this format will be used in the pointToLineDistance function
+      let polylineGeoJSON = []
+      result.routes[0].legs[0].steps.map(step => {
+          polyline.decode(step.polyline.points).map(step => {
+            path.push({latitude:step[0],longitude:step[1]})
+            polylineGeoJSON.push([step[0],step[1]])
+          })  
+      })
+      
+      //after google directions api returns a route, check if the route is safe (it doesn't pass by an incident)
+      //if it passes by an incident, the route is recreated, by adding a waypoint to the route, the coords of which
+      //are the coords of the incident but displaced by a random value. Every time the route is checked and is still not safe
+      //the random value is increased by a constant value. This process is repeated until the recreated route is safe or the 
+      //iteration count reaches a value (50)
+      //check for every report
+      for(let j=0; j<reports.length; j++){
+        // try recreating the route only up to 50 times
+        if(i<50){
+          //if the route passes by a report (the distance between the report point and the route is less than 40 meters)
+          //and if that report is recent enough based on user's selection in dropdown menu
+          //then the route isn't safe and should be recreated 
+          if((turf.pointToLineDistance([reports[j].latitude_coords, reports[j].longitude_coords], polylineGeoJSON, {units: 'meters'})<40) && ((Math.floor(((new Date().getTime() - new Date(reports[j].date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value)){
+            //increase the iteration count of recreating the route
+            i++;
+            //the sign of the random value added to each waypoint coord is randomly set
+            let n1 = Math.round(Math.random())
+            let n2 = Math.round(Math.random())
+            let sign1;
+            let sign2;
+            if(n1 == 0) sign1 = -1
+            else sign1 = 1
+            if(n2 == 0) sign2 = -1
+            else sign2 = 1
+            //set the waypoint coords as the report coords displaced by a random value
+            setWaypointLatitude(reports[j].latitude_coords + sign1*i*0.00005)
+            setWaypointLongitude(reports[j].longitude_coords + sign2*i*0.00005)
+            //the value of refetch is set to random (which means that its value gonna change every time), so as the useEffect function 
+            //based on the changes of this value to be called and thus the fetchRoutePoints function to be called again, in order 
+            //to fetch a new route based on the new waypoint and repeat all the necessary checks
+            setRefetch(Math.random())
+            //break the for loop since there is already a report close to the route and there is no need to check the other reports 
+            break;
+          }
+          // if the report is neither close to the route nor recent enough 
+          else {
+            //and if all the reports are checked then the route is safe and can be rendered
+            if(j==reports.length-1){
+              //set the points of the route using the result returned by the google directions api
+              setPoints(path)
+              //render route on map
+              setRenderRoute(true);
+              //set this value to false, so as the fetchRoutePoints function inside the useEffect function won't be called again
+              setCreateSafestRoute(false)
+              //set this value to false, so as the fetchRoutePoints function inside the useEffect function won't be called again
+              setRecreateSafestRoute(false)  
+              //hide loading screen, since a safe route has been found    
+              setShowLoading(false)      
+            }
+          }
+        }
+        //if the iteration count reaches to 50 and a safe route has not been found yet
+        else {        
+          //set to false so as the fetchRoutePoints function inside the useEffect function won't be called again
+          setCreateSafestRoute(false)
+          setRecreateSafestRoute(false)  
+          //hide loading screen    
+          setShowLoading(false) 
+          //if there is a route rendered on map from a previous route search, hide the route
+          setRenderRoute(false)
+          //if the user changes the value of how recent the reports should be, retry to create a route 
+          setRetry(true)
+          //alert user that a safe route can't be found
+          Alert.alert('Σφάλμα', 'Αδυναμία εύρεσης ασφαλούς διαδρομής', [{text: 'Ok'}])
+          break;
+        }
+      }     
+      
+    })
+  }
+
+
+  //function called when user requests a safe route - called repeatedly until a safe one is found 
+  useEffect(() => {
+    if(createSafestRoute || recreateSafestRoute) {fetchRoutePoints();}
+  }, [reFetch, createSafestRoute, recreateSafestRoute])
+
+  //function called every time user changes the value of how recent the reports should be in dropdown menu
+  //when called a new route is created
+  useEffect(() => {
+    //if there was already a route rendered on map or a safe route couldn't be found
+    if(renderRoute || retry) {
+      //since a new route is created, iteration count and waypoint coords must reset
+      i=0
+      setWaypointLatitude(null)
+      setWaypointLongitude(null)
+      //hide previous route rendered on map
+      setRenderRoute(false);
+      setRetry(false)
+      //set to true so that the fetchRoutePoints is called and a new route is created
+      setRecreateSafestRoute(true)
+      //show loading screen
+      setShowLoading(true)
+      }
+  }, [value])
+
+  
+  const [showSafestRouteButton, setShowSafestRouteButton] = useState(true)
+  const [showSelectRouteWindow, setShowSelectRouteWindow] = useState(false)
+
+  //show/hide the map when user selects start,destination and waypoint 
+  const [selectStartMapVisible, setSelectStartMapVisible] = useState(false);
+  const [selectDestinationMapVisible, setSelectDestinationMapVisible] = useState(false);
+  const [selectNodeMapVisible, setSelectNodeMapVisible] = useState(false);
+
+  const [showMarker, setShowMarker] = useState(false);
+  const [MarkerCoords, setMarkerCoords] = useState({"latitude":0, "longitude": 0});
+  const [showStartAddress, setShowStartAddress] = useState(false)
+  const [showNodeAddress, setShowNodeAddress] = useState(false)
+  const [showDestinationAddress, setShowDestinationAddress] = useState(false)
+
+  const [startAddressMarked, setStartAddressMarked] = useState(null) 
+  const [destinationAddressMarked, setDestinationAddressMarked] = useState(null) 
+  const [nodeAddressMarked, setNodeAddressMarked] = useState(null) 
+  const [renderMarkerbySearch, setRenderMarkerbySearch] = useState(false);
+
+  const [isError, setIsError] = useState(false);
+
+  const [renderStartMarker, setRenderStartMarker] = useState(false)
+  const [renderNodeMarker, setRenderNodeMarker] = useState(false)
+  const [renderDestinationMarker, setRenderDestinationMarker] = useState(false)
+
+  //used for incidents occured the past 3 hours - the date of the incident that is rendered on the map fades in&out
+  const fadeIn = {
+    from: {
+      opacity: 0,
+    },
+    to: {
+      opacity: 1,
+    },
+  };
 
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
@@ -997,7 +1200,7 @@ const RecentReportsPage = ({navigation}) => {
 
         {/* Recent reports map */}
         <View style={styles.reportsMap}>
-          <MapView style={{width:360, height:600}}
+          <MapView style={{width:360, height:'100%'}}
             provider={MapView.PROVIDER_GOOGLE}
             ref={(ref) => (this.mapRef = ref)}
             minZoomLevel={5}
@@ -1017,36 +1220,73 @@ const RecentReportsPage = ({navigation}) => {
               // to check how recent a report is, subtract the date of the report from current date 
               // the result is in milliseconds, so divide by 1000*60*60*24 to turn it into days
               // when the result is in hours, add 3 since Date() returns date that is 3 hours behind the current time
-              if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value){
+              if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value){                
                 return (
-                  <Marker key={report.report_id} 
+                  <Marker key={report.report_id}
                           // by pressing on the marker , a bubble with the report's details appears - index of the report in the array of reports is also stored
-                          onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
+                          onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report)); }} 
                           // marker coordinates
-                          coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
-                                            
-                  </Marker>)
+                          coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>                                          
+                  </Marker>)          
               }
               
             })}  
             {/* except for the marker icon, a text is also rendered next to the marker, that contains the date of the report */}
             {/* the text is rendered as a marker in order to stay at the same spot even after moving the map */}
             {renderMarker && reports.map(report => 
-            {
+            { 
               // render the text only if the respective marker in rendered
               if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value){
-                return (
-                  <Marker key={report.report_id} 
-                          //set an offset to the text's position to not overlap the marker
-                          anchor={{x:-0.05,y:0.3}}
-                          // by pressing on the text, the bubble with the report's details can also appear
-                          onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
-                          coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
-                    <Text style={styles.markerLabel}>{formatDateTime(report.date_time)}</Text>               
-                  </Marker>)
+                //if the incident didnt happen the past 3 hours
+                if((Math.floor(((new Date().getTime() - new Date(report.date_time).getTime())/ (1000 * 60 * 60)+3)))>3){
+                  return (
+                    <Marker key={report.report_id} 
+                            //set an offset to the text's position to not overlap the marker
+                            anchor={{x:-0.05,y:0.3}}
+                            // by pressing on the text, the bubble with the report's details can also appear
+                            onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
+                            coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
+                      <Text style={styles.markerLabel}>{formatDateTime(report.date_time)}</Text>               
+                    </Marker>)
+                }
+                //if the incident happened the past 3 hours, the date of the incident that is rendered on the map fades in&out
+                else{
+                  return (
+                    <Marker key={report.report_id} 
+                            //set an offset to the text's position to not overlap the marker
+                            anchor={{x:-0.05,y:0.3}}
+                            // by pressing on the text, the bubble with the report's details can also appear
+                            onPress={e=> {setMarkerBubbleVisible(true); setReportIndex(reports.indexOf(report));}} 
+                            coordinate={{latitude: report.latitude_coords, longitude: report.longitude_coords}}>
+                      <Animatable.Text  animation={fadeIn} iterationCount='infinite' style={styles.markerLabel}>{formatDateTime(report.date_time)}</Animatable.Text>               
+                    </Marker>)
+                }
               }
               
-            })}            
+            })}
+            
+            {/* render the safe route on map */}
+            {renderRoute && <Polyline coordinates={points} strokeWidth={4} strokeColor="blue" />}
+
+            {/* render a purple cycle with the letter A as marker for the start point selected by user */}
+            {renderStartMarker && 
+              <Marker coordinate={{latitude:startCoords.latitude, longitude:startCoords.longitude}}>
+                <View style={styles.routePointMarker}>
+                  <Text style={styles.routePointMarkerText}>A</Text>
+                </View>                
+              </Marker>}
+            {/* render a purple cycle as marker for the waypoint selected by user */}
+            {renderNodeMarker && 
+              <Marker coordinate={{latitude:nodeCoords.latitude, longitude:nodeCoords.longitude}}>
+                <View style={styles.routePointMarker}></View>
+              </Marker>}
+            {/* render a purple cycle with the letter B as marker for the destination point selected by user */}
+            {renderDestinationMarker && 
+              <Marker coordinate={{latitude:destinationCoords.latitude, longitude:destinationCoords.longitude}}>
+                <View style={styles.routePointMarker}>
+                  <Text style={styles.routePointMarkerText}>B</Text>
+                </View>
+              </Marker>}
           </MapView>
           {/* render the bubble with the report's details only when the marker or the text is pressed (when markerBubbleVisible is set true)*/}
           {markerBubbleVisible && 
@@ -1119,6 +1359,433 @@ const RecentReportsPage = ({navigation}) => {
             </View>
           }
         </View>
+
+        {/* find safest route button */}
+        {showSafestRouteButton && <TouchableOpacity style={styles.findSafestRoute} onPress={()=>{setShowSelectRouteWindow(true); setShowSafestRouteButton(false)}}>
+          <Text style={styles.findSafestRouteText}>Εύρεση ασφαλέστερης διαδρομής</Text>
+        </TouchableOpacity>}
+        
+        {/* popup window where user selects start, destination and waypoint of route */}
+        {showSelectRouteWindow && (
+          <View style={styles.findSafestRouteWindow}>
+              {/* hide popup window button */}
+              <View style={styles.closeSafestRouteWindow}>
+                <TouchableOpacity onPress={()=>{setShowSelectRouteWindow(false); setShowSafestRouteButton(true)}}>
+                  <Image
+                      source={require("./icons/show-hide-icon.png")}
+                      resizeMode='stretch'
+                      style={styles.closeSafestRouteWindowIcon}
+                  ></Image>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.findSafestRouteText2}>Εύρεση ασφαλέστερης διαδρομής</Text>
+              {/* start point */}
+              <View style={styles.selectHeader}>
+                <Text style={styles.selectHeaderText}>Αφετηρία:</Text>
+                {/* use current location button */}
+                <TouchableOpacity style={styles.useCurrentLocationButton} onPress={() => {getLocation(); setShowStartAddress(true); setStartAddressMarked('Τρέχουσα τοποθεσία');}}>
+                  <Text style={styles.useCurrentLocationButtonText}>Χρήση τρέχουσας τοποθεσίας</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.select}>
+                {!showStartAddress && (<Text style={styles.selectText}>Επιλέξτε αφετηρία</Text>)}
+                {showStartAddress && (<ScrollView style={{height:32, top:5}}><Text style={[styles.selectedAddress, {width:230}]}>{startAddressMarked}</Text></ScrollView>)}
+                {/* popup map  */}
+                <Modal  animationType="fade" transparent={true} visible={selectStartMapVisible}>
+                  <View style={styles.blurBackground}></View>
+                  <View style={styles.mapModal}>
+                    <View style={styles.mapWindow}>
+                      {/* map configurations */}
+                      <MapView style={{width:350, height:600}}
+                        provider={MapView.PROVIDER_GOOGLE}
+                        ref={(ref) => (this.mapRef = ref)}
+                        minZoomLevel={5}
+                        rotateEnabled={true}
+                        //region where map is centered
+                        region={{
+                          latitude: focusLatitude,
+                          longitude: focusLongitude,
+                          latitudeDelta: latDelta,
+                          longitudeDelta: 0,
+                        }} 
+                        
+                        //when user presses somewhere on map, a red marker appears and the coords of that spot are converted into an address
+                        //which is shown in the respective text field of the form
+                        onPress={ (event) => {setShowMarker(true); setMarkerCoords(event.nativeEvent.coordinate); setStartCoords(event.nativeEvent.coordinate); setRenderStartMarker(true);
+                                              {mapRef.addressForCoordinate(event.nativeEvent.coordinate).then((address) => {
+                                                setStartAddressMarked(address.thoroughfare + ' ' + address.name + ', ' + address.locality);
+                                                // console.log(addressMarked); 
+                                                }).catch((err) => {
+                                                  console.log('err', err); 
+                                                })}
+                                                setShowStartAddress(true)
+                                                setFocusLatitude(event.nativeEvent.coordinate.latitude); 
+                                                setFocusLongitude(event.nativeEvent.coordinate.longitude); 
+                                                setLatDelta(0.02);
+                        } }
+                        showsUserLocation={true}
+                        showsMyLocationButton={false}
+                      >
+                        {/* render a marker where user pressed on map */}
+                        {showMarker && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                        {/* render a marker for the selected-by-user search result */}
+                        {renderMarkerbySearch && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                      </MapView>
+                    </View>
+
+                    {/* close map button */}
+                    <View style={styles.closeMapButton}>
+                      <TouchableOpacity onPress={() => setSelectStartMapVisible(false)}>
+                        <Text style={styles.closeMapButtonText}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* find user's current location button */}
+                    <View style={styles.currentLocationButton}>
+                      {/* LatDelta is set to 0.02 for applying more zoom on user's location */}
+                      <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}> 
+                        <Image
+                          source={require("./icons/current-location-icon.jpg")}
+                          resizeMode="contain"
+                          style={{width:25, height:25, opacity:0.5, alignSelf:'center'}}
+                        ></Image>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Places search bar configuration */}
+                    <View style={styles.mapSearchBar}>
+                      <GooglePlacesAutocomplete
+                        placeholder="Αναζήτηση"
+                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        GooglePlacesDetailsQuery={{
+                          fields: 'geometry',
+                        }}
+                        // ref={ref => {
+                        //   ref?.setAddressText('123 myDefault Street, mycity')
+                        // }}
+                        fetchDetails={true}
+
+                        //when user searches for a place via the map's search bar, a list of results appears
+                        //by selecting a result, a red marker appears, map focuses on that and the address 
+                        //is also shown in the respective text field of the form 
+                        onPress={(data, details = null) => {setRenderMarkerbySearch(true); 
+                                                            setMarkerCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setStartCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setFocusLatitude(details.geometry.location.lat); 
+                                                            setFocusLongitude(details.geometry.location.lng); 
+                                                            setLatDelta(0.02);
+                                                            setShowStartAddress(true);
+                                                            setStartAddressMarked(data.description);
+                                                            setRenderStartMarker(true);
+                                                          }}
+                        textInputProps={{placeholderTextColor:'grey'}}
+                        styles={{textInput:{color:'black'}, description:{color:'black'}}}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+                
+                {/* Open map button */}
+                {/* When map opens , user is asked to grant permission for access to their location */}
+                <TouchableOpacity onPress={() => {setSelectStartMapVisible(true); getLocation(); setShowMarker(false); setRenderMarkerbySearch(false);}}>
+                  <Image
+                        source={require("./icons/map.png")}
+                        resizeMode="contain"
+                        style={styles.icon}
+                  ></Image>
+                </TouchableOpacity>
+              </View>
+
+              {/* waypoint */}
+              <Text style={styles.selectHeaderText}>Ενδιάμεσοι κόμβοι: (προαιρετικά)</Text>
+              <View style={styles.select}>
+                {!showNodeAddress && (<Text style={styles.selectText}>Επιλέξτε ενδιάμεσο κόμβο</Text>)}
+                {showNodeAddress && (<ScrollView style={{height:32, top:5}}><Text style={[styles.selectedAddress, {width:230}]}>{nodeAddressMarked}</Text></ScrollView>)}
+                {/* popup map  */}
+                <Modal  animationType="fade" transparent={true} visible={selectNodeMapVisible}>
+                  <View style={styles.blurBackground}></View>
+                  <View style={styles.mapModal}>
+                    <View style={styles.mapWindow}>
+                      {/* map configurations */}
+                      <MapView style={{width:350, height:600}}
+                        provider={MapView.PROVIDER_GOOGLE}
+                        ref={(ref) => (this.mapRef = ref)}
+                        minZoomLevel={5}
+                        rotateEnabled={true}
+                        //region where map is centered
+                        region={{
+                          latitude: focusLatitude,
+                          longitude: focusLongitude,
+                          latitudeDelta: latDelta,
+                          longitudeDelta: 0,
+                        }} 
+                        
+                        //when user presses somewhere on map, a red marker appears and the coords of that spot are converted into an address
+                        //which is shown in the respective text field of the form
+                        onPress={ (event) => {setShowMarker(true); setMarkerCoords(event.nativeEvent.coordinate); setNodeCoords(event.nativeEvent.coordinate); setRenderNodeMarker(true);
+                                              {mapRef.addressForCoordinate(event.nativeEvent.coordinate).then((address) => {
+                                                setNodeAddressMarked(address.thoroughfare + ' ' + address.name + ', ' + address.locality);
+                                                // console.log(addressMarked); 
+                                                }).catch((err) => {
+                                                  console.log('err', err); 
+                                                })}
+                                                setShowNodeAddress(true)
+                        } }
+                        showsUserLocation={true}
+                        showsMyLocationButton={false}
+                      >
+                        {/* render a marker where user pressed on map */}
+                        {showMarker && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                        {/* render a marker for the selected-by-user search result */}
+                        {renderMarkerbySearch && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                      </MapView>
+                    </View>
+
+                    {/* close map button */}
+                    <View style={styles.closeMapButton}>
+                      <TouchableOpacity onPress={() => setSelectNodeMapVisible(false)}>
+                        <Text style={styles.closeMapButtonText}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* find user's current location button */}
+                    <View style={styles.currentLocationButton}>
+                      {/* LatDelta is set to 0.02 for applying more zoom on user's location */}
+                      <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}> 
+                        <Image
+                          source={require("./icons/current-location-icon.jpg")}
+                          resizeMode="contain"
+                          style={{width:25, height:25, opacity:0.5, alignSelf:'center'}}
+                        ></Image>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Places search bar configuration */}
+                    <View style={styles.mapSearchBar}>
+                      <GooglePlacesAutocomplete
+                        placeholder="Αναζήτηση"
+                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        GooglePlacesDetailsQuery={{
+                          fields: 'geometry',
+                        }}
+                        // ref={ref => {
+                        //   ref?.setAddressText('123 myDefault Street, mycity')
+                        // }}
+                        fetchDetails={true}
+
+                        //when user searches for a place via the map's search bar, a list of results appears
+                        //by selecting a result, a red marker appears, map focuses on that and the address 
+                        //is also shown in the respective text field of the form 
+                        onPress={(data, details = null) => {setRenderMarkerbySearch(true); 
+                                                            setMarkerCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setNodeCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setFocusLatitude(details.geometry.location.lat); 
+                                                            setFocusLongitude(details.geometry.location.lng); 
+                                                            setLatDelta(0.02);
+                                                            setShowNodeAddress(true);
+                                                            setNodeAddressMarked(data.description);
+                                                            setRenderNodeMarker(true);
+                                                          }}
+                        textInputProps={{placeholderTextColor:'grey'}}
+                        styles={{textInput:{color:'black'}, description:{color:'black'}}}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+
+                {/* Open map button */}
+                {/* When map opens , user is asked to grant permission for access to their location */}
+                <TouchableOpacity onPress={() => {setSelectNodeMapVisible(true); getLocation(); setShowMarker(false); setRenderMarkerbySearch(false);}}>
+                  <Image
+                        source={require("./icons/map.png")}
+                        resizeMode="contain"
+                        style={styles.icon}
+                  ></Image>
+                </TouchableOpacity>
+              </View>
+
+              {/* destination */}
+              <Text style={styles.selectHeaderText}>Προορισμός:</Text>
+              <View style={styles.select}>
+                {!showDestinationAddress && (<Text style={styles.selectText}>Επιλέξτε προορισμό</Text>)}
+                {showDestinationAddress && (<ScrollView style={{height:32, top:5}}><Text style={[styles.selectedAddress, {width:230}]}>{destinationAddressMarked}</Text></ScrollView>)}
+                {/* popup map  */}
+                <Modal  animationType="fade" transparent={true} visible={selectDestinationMapVisible}>
+                  <View style={styles.blurBackground}></View>
+                  <View style={styles.mapModal}>
+                    <View style={styles.mapWindow}>
+                      {/* map configurations */}
+                      <MapView style={{width:350, height:600}}
+                        provider={MapView.PROVIDER_GOOGLE}
+                        ref={(ref) => (this.mapRef = ref)}
+                        minZoomLevel={5}
+                        rotateEnabled={true}
+                        //region where map is centered
+                        region={{
+                          latitude: focusLatitude,
+                          longitude: focusLongitude,
+                          latitudeDelta: latDelta,
+                          longitudeDelta: 0,
+                        }} 
+                        
+                        //when user presses somewhere on map, a red marker appears and the coords of that spot are converted into an address
+                        //which is shown in the respective text field of the form
+                        onPress={ (event) => {setShowMarker(true); setMarkerCoords(event.nativeEvent.coordinate); setDestinationCoords(event.nativeEvent.coordinate); setRenderDestinationMarker(true);
+                                              {mapRef.addressForCoordinate(event.nativeEvent.coordinate).then((address) => {
+                                                setDestinationAddressMarked(address.thoroughfare + ' ' + address.name + ', ' + address.locality);
+                                                // console.log(addressMarked); 
+                                                }).catch((err) => {
+                                                  console.log('err', err); 
+                                                })}
+                                                setShowDestinationAddress(true)
+                        } }
+                        showsUserLocation={true}
+                        showsMyLocationButton={false}
+                      >
+                        {/* render a marker where user pressed on map */}
+                        {showMarker && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                        {/* render a marker for the selected-by-user search result */}
+                        {renderMarkerbySearch && <Marker coordinate={{latitude: MarkerCoords.latitude, longitude: MarkerCoords.longitude}}/>} 
+                      </MapView>
+                    </View>
+
+                    {/* close map button */}
+                    <View style={styles.closeMapButton}>
+                      <TouchableOpacity onPress={() => setSelectDestinationMapVisible(false)}>
+                        <Text style={styles.closeMapButtonText}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* find user's current location button */}
+                    <View style={styles.currentLocationButton}>
+                      {/* LatDelta is set to 0.02 for applying more zoom on user's location */}
+                      <TouchableOpacity onPress={() => {getLocation(); setLatDelta(0.02)}}> 
+                        <Image
+                          source={require("./icons/current-location-icon.jpg")}
+                          resizeMode="contain"
+                          style={{width:25, height:25, opacity:0.5, alignSelf:'center'}}
+                        ></Image>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Places search bar configuration */}
+                    <View style={styles.mapSearchBar}>
+                      <GooglePlacesAutocomplete
+                        placeholder="Αναζήτηση"
+                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        GooglePlacesDetailsQuery={{
+                          fields: 'geometry',
+                        }}
+                        // ref={ref => {
+                        //   ref?.setAddressText('123 myDefault Street, mycity')
+                        // }}
+                        fetchDetails={true}
+
+                        //when user searches for a place via the map's search bar, a list of results appears
+                        //by selecting a result, a red marker appears, map focuses on that and the address 
+                        //is also shown in the respective text field of the form 
+                        onPress={(data, details = null) => {setRenderMarkerbySearch(true); 
+                                                            setMarkerCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setDestinationCoords({'latitude':details.geometry.location.lat, 'longitude':details.geometry.location.lng});
+                                                            setFocusLatitude(details.geometry.location.lat); 
+                                                            setFocusLongitude(details.geometry.location.lng); 
+                                                            setLatDelta(0.02);
+                                                            setShowDestinationAddress(true);
+                                                            setDestinationAddressMarked(data.description);
+                                                            setRenderDestinationMarker(true);
+                                                          }}
+                        textInputProps={{placeholderTextColor:'grey'}}
+                        styles={{textInput:{color:'black'}, description:{color:'black'}}}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+
+                {/* Open map button */}
+                {/* When map opens , user is asked to grant permission for access to their location */}
+                <TouchableOpacity onPress={() => {setSelectDestinationMapVisible(true); getLocation(); setShowMarker(false); setRenderMarkerbySearch(false);}}>
+                  <Image
+                        source={require("./icons/map.png")}
+                        resizeMode="contain"
+                        style={styles.icon}
+                  ></Image>
+                </TouchableOpacity>
+              </View>
+              
+              {/* show error message if user didnt select start or destinstion*/}
+              {isError && <Text style={[{color: 'red',marginTop:5, alignSelf:'center'}]}>Start and destination fields are required!</Text>}
+
+              <View style={{flexDirection:'row-reverse', justifyContent:'space-around'}}>  
+                {/* proceed the search of safe route button */}
+                <TouchableOpacity style={styles.proceedButton} 
+                  onPress={() =>{
+                      //if user didnt select start or destinstion, show error message
+                      if(startAddressMarked==null || destinationAddressMarked==null){
+                        setIsError(true)
+                      }
+                      else {
+                        //if user pressed the use current location, set the coords of their location as the start coords 
+                        if(startAddressMarked=='Τρέχουσα τοποθεσία'){
+                          setStartCoords({'latitude':focusLatitude, 'longitude':focusLongitude})
+                        }
+                        setIsError(false)
+                        //hide the popup where user sets points of the route
+                        setShowSelectRouteWindow(false)
+                        setShowSafestRouteButton(true)
+                        //render the markers for start destination and waypoint (if given)
+                        setRenderStartMarker(true)
+                        setRenderDestinationMarker(true)
+                        if(nodeCoords!=null) setRenderNodeMarker(true)
+                        //hide previous route rendered on map
+                        setRenderRoute(false)
+                        //reset iteration count and waypoint coords
+                        i=0
+                        setWaypointLatitude(null)
+                        setWaypointLongitude(null)
+                        //set to true to call the fetchRoutePoints function
+                        setCreateSafestRoute(true)
+                        //show loading screen
+                        setShowLoading(true)
+                      }
+                  }}>
+                  <Image
+                    source={require("./icons/arrow.png")}
+                    resizeMode='stretch'
+                    style={styles.proceedButtonIcon}
+                  ></Image>
+                </TouchableOpacity>
+
+                {/* clear start,destination and waypoint fields button */}
+                <TouchableOpacity style={styles.clearButton} 
+                  onPress={() =>{
+                    setShowStartAddress(false)
+                    setShowNodeAddress(false)
+                    setShowDestinationAddress(false)
+                    setStartAddressMarked(null)
+                    setNodeAddressMarked(null)
+                    setDestinationAddressMarked(null)
+                    setRenderRoute(false)
+                    setRenderStartMarker(false)
+                    setRenderNodeMarker(false)
+                    setRenderDestinationMarker(false)
+                    setNodeCoords(null)
+                  }}>
+                  <Text style={styles.clearButtonText}>Εκκαθάριση</Text>
+                </TouchableOpacity>
+              </View>
+          </View>
+        )}
+
+        {/* loading screen when safe route is created */}
+        {showLoading && 
+          (<View style={styles.loadingWindow}>
+            <View style={styles.blurBackground}></View>
+            <Animatable.View style={styles.loadingAnimation}>
+              <Animatable.Text animation='pulse' iterationCount='infinite' style={styles.loadingAnimationText}>Εύρεση ασφαλούς διαδρομής...</Animatable.Text>
+            </Animatable.View>
+          </View>)
+        }
       </View>
     </LinearGradient>
   );
