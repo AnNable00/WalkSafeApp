@@ -1,5 +1,5 @@
 import React, {Component, useEffect, useState} from 'react';
-import {StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Modal, PermissionsAndroid, ScrollView, BackHandler, Alert} from 'react-native';
+import {StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Modal, PermissionsAndroid, ScrollView, BackHandler, Alert, LogBox} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack'
@@ -17,10 +17,136 @@ import polyline from '@mapbox/polyline';
 import { booleanPointOnLine} from '@turf/boolean-point-on-line';
 import * as turf from '@turf/turf';
 import * as Animatable from 'react-native-animatable';
+import PushNotification from 'react-native-push-notification';
+import BackgroundTimer from 'react-native-background-timer';
+import {check, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import DeviceInfo from 'react-native-device-info';
+import BackgroundGeolocation from "react-native-background-geolocation";
 
 //local IP of the PC where the server runs
-const SERVER_IP = '192.168.1.125';
+const SERVER_IP = '192.168.1.5';
 
+//hide specific warnings in UI
+LogBox.ignoreLogs(["`new NativeEventEmitter()` was called with a non-null argument without the required `addListener` method."])
+LogBox.ignoreLogs(["`new NativeEventEmitter()` was called with a non-null argument without the required `removeListeners` method."])
+LogBox.ignoreLogs([/"Waiting for previous start action to complete"/])
+LogBox.ignoreLogs([/"Permission denied"/])
+
+
+//run app in background when app is closed (but not killed) - every 30 seconds
+BackgroundTimer.runBackgroundTimer(() => { 
+  //check if background geolocation plugin is enabled - gets enabled after user login 
+  AsyncStorage.getItem('enabled').then((res)=> {
+    //if enabled start plugin
+    if(res=='true'){
+      BackgroundGeolocation.start().then((state) => {
+        //if starts successfully
+        if(state.enabled==true){
+          //get user current location
+          BackgroundGeolocation.getCurrentPosition({
+            timeout: 30, 
+            persist: true,        
+            maximumAge: 5000,
+            desiredAccuracy: 10,
+            samples: 3,
+          },
+          //if location is enabled (or disabled but has been enabled at least once when app renders and the app has not being killed)
+          //(when disabled, location returns the last known location of user when location was enabled)
+          (location)=>{
+            //store users last known location to async storage 
+            AsyncStorage.removeItem('coords')
+            AsyncStorage.setItem('coords', JSON.stringify({latitude: location.coords.latitude, longitude: location.coords.longitude}))
+            AsyncStorage.getItem('coords').then((res)=> {
+                //fetch reports close to users last known location that happened the past 3 hours
+                fetch('http://'+SERVER_IP+':3000/close_to_user_reports', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: res
+                
+                })
+                //Get response from server
+                .then(response => response.json())
+                .then(response =>{ 
+                  //if there are reports
+                  if (response[0]!=null){
+                    //check if it's a new report (user hasnt been notified for this report)
+                    AsyncStorage.getItem('lastStoredReportID').then((result)=>{
+                      if(response[0].report_id>result){
+                        //send notification to user
+                        handleNotification();
+                        //store the last id of the report that user got notified for
+                        AsyncStorage.removeItem('lastStoredReportID')
+                        AsyncStorage.setItem('lastStoredReportID', response[0].report_id.toString())
+                      }
+                    })
+                  }
+                })
+                .catch(err => {
+                  console.log(err);
+                });
+              
+            })
+          },
+          //if location is not enabled not even once after app renders after being killed
+          ()=>{
+            console.log('Location is not enabled')
+            //the code below is used as above because background timer works only if app is in background but not killed
+            //so if app is killed and the user opens the app but with the location disabled, there is still the last known location
+            //stored in async storage, and thus user can still get notified for incidents nearby
+            AsyncStorage.getItem('coords').then((res)=>{
+              if(res!=null){
+                //fetch reports close to users last known location that happened the past 3 hours
+                fetch('http://'+SERVER_IP+':3000/close_to_user_reports', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: res
+                
+                })
+                //Get response from server
+                .then(response => response.json())
+                .then(response =>{ 
+                  if (response[0]!=null){
+                    AsyncStorage.getItem('lastStoredReportID').then((result)=>{
+                      if(response[0].report_id>result){
+                        handleNotification();
+                        AsyncStorage.removeItem('lastStoredReportID')
+                        AsyncStorage.setItem('lastStoredReportID', response[0].report_id.toString())
+                      }
+                    })
+                  }
+                })
+                .catch(err => {
+                  console.log(err);
+                });
+              }
+            } )
+          })
+        }
+      })
+    }
+  })
+},30000);
+
+
+//notification configuration
+const handleNotification = () => {
+  PushNotification.createChannel(
+    {
+      channelId: "1", // (required)
+      channelName: "My channel", // (required)
+    },
+    (created) => console.log(`createChannel returned '${created}'`) // (optional) callback returns whether the channel was created, false means it already existed.
+  );
+  PushNotification.localNotification({
+    channelId: "1",
+    title: 'New incident nearby',
+    message: 'Tap to open app',
+  });
+};
 
 //Main
 const App = () => {
@@ -104,7 +230,9 @@ const SplashScreenPage = ({navigation}) => {
 
 //This page appears only when user hasn't signed in. After they sign-up they stay signed-in, unless they sign-out.
 const StartPage = ({navigation}) => {
-
+  //initial keys stored in async storage
+  AsyncStorage.setItem('enabled', 'false')
+  AsyncStorage.setItem('lastStoredReportID', '0')
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -203,12 +331,12 @@ const LoginPage = ({navigation}) => {
         {/* Registered user's email address */}
         <View>
           <Text style={styles.emailTitle}>Email</Text>
-          <TextInput style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
+          <TextInput style={styles.email} inputMode='email' placeholder='Enter your email' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
         {/* Registered user's password for app login */}
         <View>
           <Text style={styles.passwordTitle}>Password</Text>
-          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
+          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='Enter your password' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
         </View>
         <Text style={styles.forgotPassword}>Forgot your password?</Text>
         {/* Error message that appears only when there is an error while signing in (e.g. invalid password) */}
@@ -299,7 +427,7 @@ const SignupPage = ({navigation}) => {
         {/* User sets username */}
         <View>
           <Text style={styles.usernameTitle}>Username</Text>
-          <TextInput style={styles.username} placeholder='e.g. AnnaP.' placeholderTextColor={'#878787'} onChangeText={setName} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
+          <TextInput style={styles.username} placeholder='e.g. Anna' placeholderTextColor={'#878787'} onChangeText={setName} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
         {/* User sets email address */}
         <View>
@@ -309,7 +437,7 @@ const SignupPage = ({navigation}) => {
         {/* User sets password */}
         <View>
           <Text style={styles.signupPasswordTitle}>Password</Text>
-          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 5 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
+          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 4 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
         </View>
         {/* Error message that appears only when there is an error while creating account (e.g. email already exists) */}
         {isError && <Text style={[{color: 'red', top:250, alignSelf:'center'}]}>{message}</Text>}
@@ -334,6 +462,23 @@ const SignupPage = ({navigation}) => {
 
 //First page that appears when user is already signed-in
 const HomePage = ({navigation, route}) => {
+  //setup for the BackgroundGeolocation plugin used when app is in background 
+  const setupBackgroundGeolocation = () => {
+    BackgroundGeolocation.ready({
+      disableLocationAuthorizationAlert: true,
+      locationAuthorizationRequest: 'Always',
+      backgroundPermissionRationale: {"message": "Επιλέξτε 'Να επιτρέπεται πάντα', ώστε να λαμβάνεται ειδοποιήσεις για περιστατικά που συνέβησαν κοντά σας.",
+      "title":"Να επιτρέπεται στην εφαρμογή WalkSafe να έχει πρόσβαση στην τοποθεσία της συσκευής ακόμα και όταν η εφαρμογή είναι κλειστή ή δεν χρησιμοποιείται;",
+        "positiveAction": 'Να επιτρέπεται πάντα', "negativeAction": 'Άκυρο'},
+      
+      desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+      stopOnTerminate: false,
+      startOnBoot: true, 
+    }).then(() => {AsyncStorage.removeItem('enabled'); AsyncStorage.setItem('enabled', 'true')})
+  }
+  useEffect(() => {
+    setupBackgroundGeolocation();
+  })
   return (
     <LinearGradient colors={['#9975AE', 'black' ]} style={styles.container} locations={[0, 0.6]}>
       <View style={styles.container}>
@@ -857,7 +1002,7 @@ const ProfilePage = ({navigation, route}) => {
           {/* Logout button */}
           <View style={styles.logoutButton}>
             {/* When pressing logout , logged user's info are deleted from local storage and app navigates to start page for login or singup */}
-            <TouchableOpacity onPress={()=> {AsyncStorage.multiRemove(['user_id', 'user_name', 'user_email', 'user_password']); navigation.reset({index: 0, routes: [{ name: 'Start' }],});}}>
+            <TouchableOpacity onPress={()=> {AsyncStorage.multiRemove(['user_id', 'user_name', 'user_email', 'user_password', 'enabled', 'coords', 'lastStoredReportID']); navigation.reset({index: 0, routes: [{ name: 'Start' }],});}}>
               <View style={styles.rect3}>
                 <Text style={styles.logout}>Αποσύνδεση</Text>
                 <Image
@@ -885,9 +1030,11 @@ const ProfilePage = ({navigation, route}) => {
 
 //User can find recent reports with details on a map
 let i=0;
+let f = [];
+let closeToRouteReports = [] //array with reports that are close to the created route
 const RecentReportsPage = ({navigation}) => {
 
-  //initial value of dropdown list
+  //initial value of dropdown list (31 days)
   const [value, setValue] = useState('31');
 
   //initial latitude-longitude where map is focused
@@ -1033,33 +1180,79 @@ const RecentReportsPage = ({navigation}) => {
           })  
       })
       
-      //after google directions api returns a route, check if the route is safe (it doesn't pass by an incident)
-      //if it passes by an incident, the route is recreated, by adding a waypoint to the route, the coords of which
-      //are the coords of the incident but displaced by a random value. Every time the route is checked and is still not safe
-      //the random value is increased by a constant value. This process is repeated until the recreated route is safe or the 
-      //iteration count reaches a value (50)
+      //After google directions api returns a route, check if the route is safe (it doesn't pass by an incident)
+      //if it passes by an incident, the route is recreated to avoid the report, by adding a waypoint to the route, the coords of which
+      //are the coords of the incident but displaced by an offset (the offset displaces the coords to 4 different directions 
+      //based on the sign of the latitude and longitude offset ++,+-,-+,--). Every time the route is checked and is still not safe
+      //the offset is increased by a factor only after all 4 different signs of offset are checked. This process is repeated until 
+      //the recreated route is safe or the iteration count reaches a value (40). The recreated route after avoiding a report
+      //may happen to pass by another report. In that case , the whole proccess repeats for the new report. But it can also happen that
+      //after avoiding the second report , the route passes by the first report again (if reports are close to each other). 
+      //Thats why we store to an array (closeToRouteReports) every report that causes trouble to the route along with a counter 
+      //(different for each report) that increases every time the coords of the waypoint are recalculated because of the respective 
+      //report. This way, even after the route passes by the same report again the algorithm won't start again and check the same 
+      //waypoints, but will continue from where it stopped (the waypoints now will be further away from the report)
       //check for every report
       for(let j=0; j<reports.length; j++){
-        // try recreating the route only up to 50 times
-        if(i<50){
-          //if the route passes by a report (the distance between the report point and the route is less than 40 meters)
+        // try recreating the route only up to 40 times
+        if(i<40){
+          //if the route passes by a report (the distance between the report point and the route is less than 50 meters)
           //and if that report is recent enough based on user's selection in dropdown menu
           //then the route isn't safe and should be recreated 
-          if((turf.pointToLineDistance([reports[j].latitude_coords, reports[j].longitude_coords], polylineGeoJSON, {units: 'meters'})<40) && ((Math.floor(((new Date().getTime() - new Date(reports[j].date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value)){
+          if((turf.pointToLineDistance([reports[j].latitude_coords, reports[j].longitude_coords], polylineGeoJSON, {units: 'meters'})<50) && ((Math.floor(((new Date().getTime() - new Date(reports[j].date_time).getTime())/ (1000 * 60 * 60)+3)/24))<=value)){
+            
+            //add the report to the closeToRouteReports array (if the array is empty) and set the counter to 1
+            if(closeToRouteReports.length==0){
+              closeToRouteReports.push({ID:j, counter:1})
+            }
+            else {
+              //add the report to the closeToRouteReports array if not exists and set the counter to 1
+              if(!closeToRouteReports.some(function(obj){return obj["ID"]==j})){
+                closeToRouteReports.push({ID:j, counter:1})
+              }
+              //increase the counter for the report that causes the trouble and because of which the waypoint is recalculated
+              else{
+                closeToRouteReports[closeToRouteReports.findIndex(x=>x.ID ==j)].counter++
+              }
+            }
+            console.log(closeToRouteReports)
+
             //increase the iteration count of recreating the route
             i++;
-            //the sign of the random value added to each waypoint coord is randomly set
-            let n1 = Math.round(Math.random())
-            let n2 = Math.round(Math.random())
+            
+            //the sign of the offset added to each waypoint coord is calculated as the counter of the report modulo 4
             let sign1;
             let sign2;
-            if(n1 == 0) sign1 = -1
-            else sign1 = 1
-            if(n2 == 0) sign2 = -1
-            else sign2 = 1
-            //set the waypoint coords as the report coords displaced by a random value
-            setWaypointLatitude(reports[j].latitude_coords + sign1*i*0.00005)
-            setWaypointLongitude(reports[j].longitude_coords + sign2*i*0.00005)
+            let counter = closeToRouteReports[closeToRouteReports.findIndex(x=>x.ID ==j)].counter
+            //if the result equals to 1 , both latitude and longitude offset are positive
+            if(counter % 4 == 1){
+              sign1 = 1
+              sign2 = 1
+            }
+            //if the result equals to 2 , latitude offset is positive and longitude offset is negative
+            else if(counter % 4 == 2){
+              sign1 = 1
+              sign2 = -1
+            }
+            //if the result equals to 3 , latitude offset is negative and longitude offset is positive
+            else if(counter % 4 == 3){
+              sign1 = -1
+              sign2 = 1
+            }
+            //if the result equals to 0 , both latitude and longitude offset are negative
+            else if(counter % 4 == 0){
+              sign1 = -1
+              sign2 = -1
+            }
+
+            //the offset is multiplied by a factor calculated as the ceiling of the counter of the report divided by 4
+            //this means that the offset is increased only after all 4 different signs of offset are checked
+            let factor = Math.ceil(counter/4)
+            
+            //set the waypoint coords as the report coords displaced by an offset
+            setWaypointLatitude(reports[j].latitude_coords + sign1*factor*0.0002)
+            setWaypointLongitude(reports[j].longitude_coords + sign2*factor*0.0002)
+            f.push({lat:reports[j].latitude_coords + sign1*factor*0.0002, lng:reports[j].longitude_coords + sign2*factor*0.0002})
             //the value of refetch is set to random (which means that its value gonna change every time), so as the useEffect function 
             //based on the changes of this value to be called and thus the fetchRoutePoints function to be called again, in order 
             //to fetch a new route based on the new waypoint and repeat all the necessary checks
@@ -1084,8 +1277,8 @@ const RecentReportsPage = ({navigation}) => {
             }
           }
         }
-        //if the iteration count reaches to 50 and a safe route has not been found yet
-        else {        
+        //if the iteration count reaches to 30 and a safe route has not been found yet
+        else { 
           //set to false so as the fetchRoutePoints function inside the useEffect function won't be called again
           setCreateSafestRoute(false)
           setRecreateSafestRoute(false)  
@@ -1119,6 +1312,9 @@ const RecentReportsPage = ({navigation}) => {
       i=0
       setWaypointLatitude(null)
       setWaypointLongitude(null)
+      f = []
+      //reset closeToRouteReports array
+      closeToRouteReports = []
       //hide previous route rendered on map
       setRenderRoute(false);
       setRetry(false)
@@ -1213,6 +1409,9 @@ const RecentReportsPage = ({navigation}) => {
             }}
             showsUserLocation={true}
           >
+          {f.map(x=>{
+            return(<Marker key={f.indexOf(x)} pinColor='blue' coordinate={{latitude: x.lat, longitude: x.lng}}></Marker>)
+          })}
           {/* render a marker for every report*/}
           {renderMarker && reports.map(report => 
             { 
@@ -1743,6 +1942,9 @@ const RecentReportsPage = ({navigation}) => {
                         i=0
                         setWaypointLatitude(null)
                         setWaypointLongitude(null)
+                        f=[]
+                        //reset closeToRouteReports array
+                        closeToRouteReports = []
                         //set to true to call the fetchRoutePoints function
                         setCreateSafestRoute(true)
                         //show loading screen
