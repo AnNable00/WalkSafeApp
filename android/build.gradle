@@ -19,3 +19,12 @@ buildscript {
         classpath("com.facebook.react:react-native-gradle-plugin")
     }
 }
+
+allprojects {   
+    repositories {
+       // Required for react-native-background-geolocation
+       maven { url("${project(':react-native-background-geolocation').projectDir}/libs") }
+       // Required for react-native-background-fetch
+       maven { url("${project(':react-native-background-fetch').projectDir}/libs") }
+}
+}
