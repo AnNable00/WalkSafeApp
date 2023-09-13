@@ -24,7 +24,7 @@ import DeviceInfo from 'react-native-device-info';
 import BackgroundGeolocation from "react-native-background-geolocation";
 
 //local IP of the PC where the server runs
-const SERVER_IP = '192.168.1.5';
+const SERVER_URL = 'https://walksafe-nodejs-47c538574b84.herokuapp.com'
 
 //hide specific warnings in UI
 LogBox.ignoreLogs(["`new NativeEventEmitter()` was called with a non-null argument without the required `addListener` method."])
@@ -58,7 +58,7 @@ BackgroundTimer.runBackgroundTimer(() => {
             AsyncStorage.setItem('coords', JSON.stringify({latitude: location.coords.latitude, longitude: location.coords.longitude}))
             AsyncStorage.getItem('coords').then((res)=> {
                 //fetch reports close to users last known location that happened the past 3 hours
-                fetch('http://'+SERVER_IP+':3000/close_to_user_reports', {
+                fetch(SERVER_URL+'/close_to_user_reports', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ BackgroundTimer.runBackgroundTimer(() => {
             AsyncStorage.getItem('coords').then((res)=>{
               if(res!=null){
                 //fetch reports close to users last known location that happened the past 3 hours
-                fetch('http://'+SERVER_IP+':3000/close_to_user_reports', {
+                fetch(SERVER_URL+'/close_to_user_reports', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ const LoginPage = ({navigation}) => {
     
     //Fetch data to client from server 
     //Send given user email and password to server
-    fetch('http://'+SERVER_IP+':3000/login', {
+    fetch(SERVER_URL+'/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -376,7 +376,7 @@ const SignupPage = ({navigation}) => {
 
     //Fetch data to client from server 
     //Send given user email, username and password to server
-    fetch('http://'+SERVER_IP+':3000/signup', {
+    fetch(SERVER_URL+'/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -879,7 +879,7 @@ const SubmitReportPage = ({navigation,route}) => {
   const reportSubmissionHandler = () => {
      
     //Send to server all the report info the user submitted in previous page
-    fetch('http://'+SERVER_IP+':3000/submit_report', {
+    fetch(SERVER_URL+'/submit_report', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1071,7 +1071,7 @@ const RecentReportsPage = ({navigation}) => {
 
   //function that fetches reports from database
   const fetchReportsFromServer =  async() => {
-    return fetch('http://'+SERVER_IP+':3000/reports', {
+    return fetch(SERVER_URL+'/reports', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
