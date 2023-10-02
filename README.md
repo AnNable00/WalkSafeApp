@@ -1,5 +1,6 @@
 # WalkSafeApp
 Diploma Thesis - University of Patras
+
 Title: Design and development of a pedestrian navigation application for warning about incidents in hazardous areas
  
 
