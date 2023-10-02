@@ -4,10 +4,10 @@ const mysql = require('mysql2');
 
 //Connection to database server running on heroku
 const connection = mysql.createPool({
-    host     : 'eanl4i1omny740jw.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
-    user     : 'g3d6ffgsw8peat8h',
-    password : 'ievwabt7aur1sjuf',
-    database : 'kt7vu9ubflthd8rb'
+    host     : 'HOST',
+    user     : 'USER',
+    password : 'PASSWORD',
+    database : 'DATABASE'
   });
 
 
