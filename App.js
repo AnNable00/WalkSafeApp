@@ -31,6 +31,30 @@ LogBox.ignoreLogs([/"Waiting for previous start action to complete"/])
 LogBox.ignoreLogs([/"Permission denied"/])
 
 
+//Main
+const App = () => {
+
+  const Stack = createNativeStackNavigator();
+  
+  return (
+    //Different screens of the app
+    <NavigationContainer>
+      <Stack.Navigator headerMode='screen'>
+        <Stack.Screen name='SplashScreen' component={SplashScreenPage} options={{headerShown: false}}/>
+        <Stack.Screen name='Start' component={StartPage} options={{headerShown: false}}/>
+        <Stack.Screen name='Login' component={LoginPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='Signup' component={SignupPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='Home' component={HomePage} options={{headerShown: false}}/>
+        <Stack.Screen name='Report' component={ReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='SubmitReport' component={SubmitReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='Profile' component={ProfilePage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+        <Stack.Screen name='RecentReports' component={RecentReportsPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
+      </Stack.Navigator>
+    </NavigationContainer>
+  )
+}
+
+
 //run app in background when app is closed (but not killed) - every 30 seconds
 BackgroundTimer.runBackgroundTimer(() => { 
   //check if background geolocation plugin is enabled - gets enabled after user login 
@@ -145,29 +169,6 @@ const handleNotification = () => {
     message: 'Tap to open app',
   });
 };
-
-//Main
-const App = () => {
-
-  const Stack = createNativeStackNavigator();
-  
-  return (
-    //Different screens of the app
-    <NavigationContainer>
-      <Stack.Navigator headerMode='screen'>
-        <Stack.Screen name='SplashScreen' component={SplashScreenPage} options={{headerShown: false}}/>
-        <Stack.Screen name='Start' component={StartPage} options={{headerShown: false}}/>
-        <Stack.Screen name='Login' component={LoginPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-        <Stack.Screen name='Signup' component={SignupPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-        <Stack.Screen name='Home' component={HomePage} options={{headerShown: false}}/>
-        <Stack.Screen name='Report' component={ReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-        <Stack.Screen name='SubmitReport' component={SubmitReportPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-        <Stack.Screen name='Profile' component={ProfilePage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-        <Stack.Screen name='RecentReports' component={RecentReportsPage} options={{headerTransparent: true, headerTitle: '', headerTintColor: 'white'}}/>
-      </Stack.Navigator>
-    </NavigationContainer>
-  )
-}
 
 
 //Logo
