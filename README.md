@@ -20,8 +20,8 @@ on maps, Google APIs were also used.
 INSTALLATION
 
 1. Clone repository (using git clone)
-2. Open cmd and use cd command (change directory) with the path of the project
-3. Install node_modules using npm install command
+2. Open cmd and use 'cd' command (change directory) with the path of the project
+3. Install node_modules using 'npm install' command
 4. Connect to a physical device (via USB) or an emulator (using AndroidStudio) to run the app
 5. Check list of devices using the 'adb devices' command
 6. Use 'npx react-native run-android' command to build the app on the selected device
