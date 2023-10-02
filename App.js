@@ -22,7 +22,7 @@ import BackgroundTimer from 'react-native-background-timer';
 import BackgroundGeolocation from "react-native-background-geolocation";
 
 //url of server where the database is stored
-const SERVER_URL = 'https://walksafe-nodejs-47c538574b84.herokuapp.com'
+const SERVER_URL = 'HEROKU_SERVER_URL'
 
 //hide specific warnings in UI
 LogBox.ignoreLogs(["`new NativeEventEmitter()` was called with a non-null argument without the required `addListener` method."])
@@ -796,7 +796,7 @@ const ReportPage = ({navigation, route}) => {
                 <View style={styles.mapSearchBar}>
                   <GooglePlacesAutocomplete
                     placeholder="Αναζήτηση"
-                    query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                    query={{key: 'API_KEY', components: 'country:gr'}}
                     GooglePlacesDetailsQuery={{
                       fields: 'geometry',
                     }}
@@ -1159,7 +1159,7 @@ const RecentReportsPage = ({navigation}) => {
       waypoint_longitude = destinationCoords.longitude
     }
     //fetch a route from google directions api based on start,destination and node points selected by user, as well as the waypoint added automatically
-    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${start_latitude}%2C${start_longitude}&destination=${destination_latitude}%2C${destination_longitude}&waypoints=via:${node_latitude}%2C${node_longitude}%7Cvia:${waypoint_latitude}%2C${waypoint_longitude}&mode=walking&key=AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM`).then(res => {return res.json()})
+    fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${start_latitude}%2C${start_longitude}&destination=${destination_latitude}%2C${destination_longitude}&waypoints=via:${node_latitude}%2C${node_longitude}%7Cvia:${waypoint_latitude}%2C${waypoint_longitude}&mode=walking&key=API_KEY`).then(res => {return res.json()})
     .then(result => {
       //path stores the coords of each point of the route as object ([{latitude:lat, longitude:lng}, {...}]) - this format will be used in the component <Polyline>
       let path = []
@@ -1647,7 +1647,7 @@ const RecentReportsPage = ({navigation}) => {
                     <View style={styles.mapSearchBar}>
                       <GooglePlacesAutocomplete
                         placeholder="Αναζήτηση"
-                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        query={{key: 'API_KEY', components: 'country:gr'}}
                         GooglePlacesDetailsQuery={{
                           fields: 'geometry',
                         }}
@@ -1755,7 +1755,7 @@ const RecentReportsPage = ({navigation}) => {
                     <View style={styles.mapSearchBar}>
                       <GooglePlacesAutocomplete
                         placeholder="Αναζήτηση"
-                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        query={{key: 'API_KEY', components: 'country:gr'}}
                         GooglePlacesDetailsQuery={{
                           fields: 'geometry',
                         }}
@@ -1863,7 +1863,7 @@ const RecentReportsPage = ({navigation}) => {
                     <View style={styles.mapSearchBar}>
                       <GooglePlacesAutocomplete
                         placeholder="Αναζήτηση"
-                        query={{key: 'AIzaSyATSLZhx7JSLaiSmqviVGRII7i_cjzJwpM', components: 'country:gr'}}
+                        query={{key: 'API_KEY', components: 'country:gr'}}
                         GooglePlacesDetailsQuery={{
                           fields: 'geometry',
                         }}
