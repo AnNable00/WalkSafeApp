@@ -120,10 +120,8 @@ app.get('/users', function (req, res) {
 
     // Executing the MySQL query
     conn.query('SELECT * FROM users', function (error, results) {
-      // If some error occurs, we throw an error.
       if (error) throw error;
-
-      // Getting the 'response' from the database and sending it to our route. This is were the data is.
+      // Send response to client
       res.send(results)
     });
     connection.releaseConnection(conn)
@@ -156,10 +154,8 @@ app.post('/close_to_user_reports', function (req, res) {
   var lng = req.body.longitude;
   // Executing the MySQL query
   conn.query('select * from reports where (timestampdiff(hour,date_time, now())+3) < 4 and sqrt(power((latitude_coords-'+lat+'),2)+power((longitude_coords-'+lng+'),2))< 0.008', function (error, results) {
-    // If some error occurs, we throw an error.
     if (error) throw error;
-
-    // Getting the 'response' from the database and sending it to our route. This is were the data is.
+    // Send response to client
     res.send(results)
   });
   connection.releaseConnection(conn)

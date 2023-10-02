@@ -19,11 +19,9 @@ import * as turf from '@turf/turf';
 import * as Animatable from 'react-native-animatable';
 import PushNotification from 'react-native-push-notification';
 import BackgroundTimer from 'react-native-background-timer';
-import {check, PERMISSIONS, RESULTS} from 'react-native-permissions';
-import DeviceInfo from 'react-native-device-info';
 import BackgroundGeolocation from "react-native-background-geolocation";
 
-//local IP of the PC where the server runs
+//url of server where the database is stored
 const SERVER_URL = 'https://walksafe-nodejs-47c538574b84.herokuapp.com'
 
 //hide specific warnings in UI
@@ -427,17 +425,17 @@ const SignupPage = ({navigation}) => {
         {/* User sets username */}
         <View>
           <Text style={styles.usernameTitle}>Username</Text>
-          <TextInput style={styles.username} placeholder='e.g. Anna' placeholderTextColor={'#878787'} onChangeText={setName} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
+          <TextInput style={styles.username} placeholder='Enter a username' placeholderTextColor={'#878787'} onChangeText={setName} onSubmitEditing={() => { this.secondTextInput.focus(); }}/>
         </View>
         {/* User sets email address */}
         <View>
           <Text style={styles.signupEmailTitle}>Email</Text>
-          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.email} inputMode='email' placeholder='e.g. abc@gmail.com' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.thirdTextInput.focus(); }}/>
+          <TextInput ref={(input) => { this.secondTextInput = input; }} style={styles.email} inputMode='email' placeholder='Enter an email' placeholderTextColor={'#878787'} onChangeText={setEmail} onSubmitEditing={() => { this.thirdTextInput.focus(); }}/>
         </View>
         {/* User sets password */}
         <View>
           <Text style={styles.signupPasswordTitle}>Password</Text>
-          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='must be at least 4 characters' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
+          <TextInput ref={(input) => { this.thirdTextInput = input; }} style={styles.password} secureTextEntry={true} placeholder='Enter a password' placeholderTextColor={'#878787'} onChangeText={setPassword}/>
         </View>
         {/* Error message that appears only when there is an error while creating account (e.g. email already exists) */}
         {isError && <Text style={[{color: 'red', top:250, alignSelf:'center'}]}>{message}</Text>}
@@ -646,14 +644,11 @@ const ReportPage = ({navigation, route}) => {
     }
     else {
       //change date format since database requires specific format for date&time (yyyy-mm-dd hh:mm)
-      var hours = dateTime.getHours() +3; //add 3 hours because when value is stored to database goes 3 hours back
-      if (hours==24) hours='00'; //if 21.00 is selected, by adding 3 hours goes to 24.00 which is not valid for inserting in database (=>00.00)
-      if(hours==25) hours='01'; //22.00 + 3 = 25 => 01.00
-      if(hours==26) hours='02'; //23.00 + 3 = 26 => 02.00
+      var hours = dateTime.getHours();
       var formattedDate = `${dateTime.getFullYear()}-${dateTime.getMonth()+1}-${dateTime.getDate()} ${hours}:${dateTime.getMinutes()}`
       
       //Check if description is detailed enough
-      if(description.length <40){
+      if(description.length <15){
         setIsError(true);
         setMessage('Description should be more detailed!')
       }
@@ -805,9 +800,6 @@ const ReportPage = ({navigation, route}) => {
                     GooglePlacesDetailsQuery={{
                       fields: 'geometry',
                     }}
-                    // ref={ref => {
-                    //   ref?.setAddressText('123 myDefault Street, mycity')
-                    // }}
                     fetchDetails={true}
 
                     //when user searches for a place via the map's search bar, a list of results appears
@@ -1215,7 +1207,6 @@ const RecentReportsPage = ({navigation}) => {
                 closeToRouteReports[closeToRouteReports.findIndex(x=>x.ID ==j)].counter++
               }
             }
-            console.log(closeToRouteReports)
 
             //increase the iteration count of recreating the route
             i++;
@@ -1277,7 +1268,7 @@ const RecentReportsPage = ({navigation}) => {
             }
           }
         }
-        //if the iteration count reaches to 30 and a safe route has not been found yet
+        //if the iteration count reaches to 40 and a safe route has not been found yet
         else { 
           //set to false so as the fetchRoutePoints function inside the useEffect function won't be called again
           setCreateSafestRoute(false)
@@ -1409,9 +1400,9 @@ const RecentReportsPage = ({navigation}) => {
             }}
             showsUserLocation={true}
           >
-          {f.map(x=>{
+          {/* {f.map(x=>{
             return(<Marker key={f.indexOf(x)} pinColor='blue' coordinate={{latitude: x.lat, longitude: x.lng}}></Marker>)
-          })}
+          })} */}
           {/* render a marker for every report*/}
           {renderMarker && reports.map(report => 
             { 
